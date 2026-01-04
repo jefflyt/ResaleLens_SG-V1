@@ -1,0 +1,29 @@
+# Workspace Rules
+
+## 🧠 Behavior & Workflow
+- **Plan First**: Prefer "Plan mode" over autonomous execution for complex changes.
+- **Use Prompts**: The primary workflows are defined in `.agent/workflows/*.md`. Always check these for specific task instructions (e.g., planning, refactoring).
+- **Consult Specs**: Always refer to `/docs` for architectural decisions before inventing behavior.
+
+## 💻 Coding Standards
+- **Functions**: Keep them small (20-50 lines), focused on a single responsibility.
+- **Naming**: Use clear, descriptive names.
+- **Comments**: Add minimal but useful comments ONLY where intent is non-obvious.
+- **Style**: Preserve the existing style of files when editing.
+- **Diffs**: Return minimal patches with context; avoid unrelated changes.
+- **Dependencies**: Use the standardized package manager for the project (e.g., `pip`/.venv for Python, `npm`/`pnpm` for Node).
+- **No Magic**: Do not invent new build steps; use existing `package.json`, `requirements.txt`, or `Makefile` scripts.
+
+## 📚 Documentation
+- **Locations**:
+  - Technical Specs: `/docs/technical/`
+  - Architecture: `/docs/decisions/`
+  - Plans: `/docs/plans/`
+  - **Project Management**: `/docs/project-management/` (Summaries, retrospectives)
+- **Conventions**:
+  - Use `kebab-case` or `snake_case` for filenames.
+  - Include purpose, owner, and date in headers.
+
+## 🤖 LLM Preferences
+- **Model**: `gemini-2.0-flash` (preferred for cost/speed).
+- **Embeddings**: `text-embedding-004`.
