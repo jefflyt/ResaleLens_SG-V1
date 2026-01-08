@@ -124,7 +124,8 @@ Enable automated weekly ingestion of HDB resale transactions and block metadata 
 
 **Out of scope:**
 - POI and MRT ingestion → PR3
-- Admin UI for ingestion status/history → PR7 (Admin Lead Inbox)
+- Admin UI for ingestion status/history and manual trigger buttons → PR7 (Admin Dashboard & Lead Inbox)
+  - Note: PR2 provides API endpoints (`POST /admin/ingestion/trigger`); PR7 will add UI buttons in admin dashboard
 - Data Status page UI → PR6 (Block X-Ray & Data Status Page)
 - Fair Value calculation logic → PR4
 - Advanced geocoding (e.g., handling unit-level addresses) → Defer to Phase 2+
