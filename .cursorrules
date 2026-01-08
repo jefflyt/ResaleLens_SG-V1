@@ -25,5 +25,7 @@
   - Include purpose, owner, and date in headers.
 
 ## 🤖 LLM Preferences
-- **Model**: `gemini-2.0-flash` (preferred for cost/speed).
-- **Embeddings**: `text-embedding-004`.
+- **Model**: `gemini-2.0-flash-exp` (for AI Consultant features: cost-effective, fast insights)
+- **Embeddings**: `text-embedding-004`
+- **API Key**: Configure in `.env.local` (see `.env.example` for template)
+
