@@ -298,11 +298,13 @@ description: Break a complex feature or epic into a sequence of testable PR-size
     ---
 
 3. **Generate Artifact**:
-   - Save the plan to `docs/plans/epics/[epic-name]/PLAN.md`.
+   - Save the plan to `docs/plans/PR#_NAME.md` (e.g., `docs/plans/PR6_BLOCK_XRAY_DATA_STATUS.md`).
+   - Use uppercase for PR number and underscores for the name.
+   - Follow existing naming pattern in the `docs/plans/` directory.
 
 4. **Verification**:
 // turbo
-   - Confirm the file exists: `ls docs/plans/epics/`
+   - Confirm the file exists: `ls docs/plans/PR*.md`
 
 ---
 

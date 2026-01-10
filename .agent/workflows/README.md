@@ -38,12 +38,12 @@ This directory contains the workflows for the AI Agent. Use this cycle to build,
 4.  **`/plan_epic`** (For large features)
     *   **When to use:** Complex feature spanning multiple PRs.
     *   **What it does:** Breaks the epic into a series of dependent PRs.
-    *   **Output:** `docs/plans/epics/[epic-name]/PLAN.md`.
+    *   **Output:** `docs/plans/PR#_NAME.md` (e.g., `docs/plans/PR6_BLOCK_XRAY_DATA_STATUS.md`).
 
 5.  **`/plan_feature`** (For single tasks)
     *   **When to use:** Isolated task that fits in one PR.
     *   **What it does:** Creates a detailed, implementation-ready plan.
-    *   **Output:** `docs/plans/features/[feature-name]/PLAN.md`.
+    *   **Output:** `docs/plans/PR#_NAME.md` (e.g., `docs/plans/PR5_FAIR_VALUE_UI.md`).
 
 ### **Phase 4: Execution**
 
@@ -57,7 +57,7 @@ This directory contains the workflows for the AI Agent. Use this cycle to build,
 7.  **`/plan_refactor`**
     *   **When to use:** Code works but needs restructuring.
     *   **What it does:** Creates a safe, behavior-preserving refactor plan.
-    *   **Output:** `docs/plans/refactors/[area]/PLAN.md`.
+    *   **Output:** `docs/plans/PR#_NAME.md` or `docs/plans/REFACTOR_NAME.md`.
 
 ---
 
@@ -83,7 +83,5 @@ All workflows are **self-contained** and include their full instructions inline.
 | :--- | :--- |
 | Product Spec | `docs/psd/PSD.md` |
 | Master Plan | `docs/plans/MASTER_PLAN.md` |
-| Bootstrap Plan | `docs/plans/PR0_BOOTSTRAP.md` |
-| Feature Plans | `docs/plans/features/[name]/PLAN.md` |
-| Epic Plans | `docs/plans/epics/[name]/PLAN.md` |
-| Refactor Plans | `docs/plans/refactors/[area]/PLAN.md` |
+| PR Plans | `docs/plans/PR#_NAME.md` (e.g., `PR6_BLOCK_XRAY_DATA_STATUS.md`) |
+| Refactor Plans | `docs/plans/REFACTOR_NAME.md` (e.g., `REFACTOR_AUTH_LAYER.md`) |

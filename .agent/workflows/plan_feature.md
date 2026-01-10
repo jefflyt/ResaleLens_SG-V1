@@ -88,11 +88,13 @@ description: Plan a single-PR feature ready for implementation.
     ---
 
 3. **Generate Artifact**:
-   - Save the plan to `docs/plans/features/[feature-name]/PLAN.md`.
+   - Save the plan to `docs/plans/PR#_NAME.md` (e.g., `docs/plans/PR5_FAIR_VALUE_UI.md`).
+   - Use uppercase for PR number and underscores for the name.
+   - Follow existing naming pattern in the `docs/plans/` directory.
 
 4. **Verification**:
 // turbo
-   - Confirm the file exists: `ls docs/plans/features/`
+   - Confirm the file exists: `ls docs/plans/PR*.md`
 
 ---
 

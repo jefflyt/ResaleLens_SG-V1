@@ -16,14 +16,10 @@ class Settings:
     """Application settings loaded from environment variables."""
 
     def __init__(self) -> None:
-        self.database_url: str = os.getenv(
-            "DATABASE_URL", "sqlite:///data/resalelens.db"
-        )
+        self.database_url: str = os.getenv("DATABASE_URL", "sqlite:///data/resalelens.db")
         self.env: str = os.getenv("ENV", "development")
         self.debug: bool = os.getenv("DEBUG", "true").lower() == "true"
-        self.secret_key: str = os.getenv(
-            "SECRET_KEY", "dev-secret-key-change-in-production"
-        )
+        self.secret_key: str = os.getenv("SECRET_KEY", "dev-secret-key-change-in-production")
         self.log_level: str = os.getenv("LOG_LEVEL", "INFO")
         self.host: str = os.getenv("HOST", "0.0.0.0")
         self.port: int = int(os.getenv("PORT", "8000"))

@@ -4,7 +4,7 @@ description: Implement a specific PR or task from a plan into concrete code chan
 
 1. **Gather Inputs**:
    - Ask the user for the **Plan** or **PR details** to implement.
-   - Locate the plan file (e.g., `docs/plans/MASTER_PLAN.md`, `docs/plans/features/*/PLAN.md`, `docs/plans/epics/*/PLAN.md`).
+   - Locate the plan file (e.g., `docs/plans/MASTER_PLAN.md`, `docs/plans/PR#_NAME.md`).
 
 2. **Run Implementation Prompt**:
    - Execute the following instruction text:

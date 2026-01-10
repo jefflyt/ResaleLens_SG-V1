@@ -1,6 +1,6 @@
 """Database setup and session management."""
 
-from typing import Generator
+from collections.abc import Generator
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
@@ -28,7 +28,7 @@ class Base(DeclarativeBase):
 def get_db() -> Generator[Session, None, None]:
     """
     FastAPI dependency that provides a database session.
-    
+
     Yields:
         Session: SQLAlchemy database session
     """

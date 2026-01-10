@@ -84,7 +84,7 @@ The application will be available at `http://localhost:8000`
 | `uv run pytest --cov=src --cov-report=term-missing` | Run tests with coverage report |
 | `uv run ruff check .` | Lint codebase |
 | `uv run ruff format .` | Format codebase |
-| `uv run mypy src/` | Run type checker |
+| `cd src && uv run mypy resalelens/` | Run type checker |
 | `uv run alembic upgrade head` | Apply database migrations |
 | `uv run alembic revision --autogenerate -m "message"` | Generate new migration |
 | `uv run python scripts/setup_db.py` | Initialize database (first-time setup) |
@@ -158,7 +158,7 @@ uv run ruff format .
 
 **Type checking**:
 ```bash
-uv run mypy src/
+cd src && uv run mypy resalelens/
 ```
 
 ## CI/CD

@@ -1,9 +1,9 @@
 """FastAPI application entry point."""
 
 import logging
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import AsyncGenerator
 
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
@@ -26,21 +26,21 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """
     Application lifespan manager.
-    
+
     Handles startup and shutdown events.
     """
     # Startup
     logger.info("Starting ResaleLens application...")
-    
+
     # Create database tables
     Base.metadata.create_all(bind=engine)
     logger.info("Database tables created")
-    
+
     # Start scheduler
     start_scheduler()
-    
+
     yield
-    
+
     # Shutdown
     logger.info("Shutting down ResaleLens application...")
     shutdown_scheduler()
@@ -68,7 +68,7 @@ templates = Jinja2Templates(directory=str(templates_path))
 async def health_check() -> dict[str, str]:
     """
     Health check endpoint.
-    
+
     Returns:
         dict: Application status
     """
@@ -79,14 +79,11 @@ async def health_check() -> dict[str, str]:
 async def home(request: Request) -> HTMLResponse:
     """
     Home page.
-    
+
     Args:
         request: FastAPI request object
-        
+
     Returns:
         HTMLResponse: Rendered home page
     """
-    return templates.TemplateResponse(
-        "index.html",
-        {"request": request, "title": "ResaleLens SG"}
-    )
+    return templates.TemplateResponse(request, "index.html", {"title": "ResaleLens SG"})

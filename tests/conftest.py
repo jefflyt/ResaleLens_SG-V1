@@ -1,6 +1,6 @@
 """Pytest configuration and fixtures."""
 
-from typing import Generator
+from collections.abc import Generator
 
 import pytest
 from fastapi.testclient import TestClient
@@ -24,13 +24,13 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engin
 def test_db() -> Generator[Session, None, None]:
     """
     Create a test database session.
-    
+
     Yields:
         Session: Test database session
     """
     # Create tables
     Base.metadata.create_all(bind=engine)
-    
+
     db = TestingSessionLocal()
     try:
         yield db
@@ -44,22 +44,23 @@ def test_db() -> Generator[Session, None, None]:
 def client(test_db: Session) -> TestClient:
     """
     Create a FastAPI test client with test database override.
-    
+
     Args:
         test_db: Test database session
-        
+
     Returns:
         TestClient: FastAPI test client
     """
+
     def override_get_db() -> Generator[Session, None, None]:
         try:
             yield test_db
         finally:
             pass
-    
+
     app.dependency_overrides[get_db] = override_get_db
-    
+
     with TestClient(app) as test_client:
         yield test_client
-    
+
     app.dependency_overrides.clear()

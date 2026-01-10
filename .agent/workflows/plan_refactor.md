@@ -82,11 +82,14 @@ description: Create a behavior-preserving refactor plan.
     ---
 
 3. **Generate Artifact**:
-   - Save the refactor plan to `docs/plans/refactors/[area]/PLAN.md`.
+   - If this refactor is part of a PR: Save to `docs/plans/PR#_NAME.md` (e.g., `docs/plans/PR8_REFACTOR_AUTH.md`)
+   - If this is a standalone refactor: Save to `docs/plans/REFACTOR_NAME.md` (e.g., `docs/plans/REFACTOR_DATABASE_LAYER.md`)
+   - Use uppercase and underscores for the name.
+   - Follow existing naming pattern in the `docs/plans/` directory.
 
 4. **Verification**:
 // turbo
-   - Confirm the file exists: `ls docs/plans/refactors/`
+   - Confirm the file exists: `ls docs/plans/`
 
 ---
 
