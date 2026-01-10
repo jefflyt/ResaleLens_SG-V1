@@ -5,6 +5,13 @@
 - **Use Prompts**: The primary workflows are defined in `.agent/workflows/*.md`. Always check these for specific task instructions (e.g., planning, refactoring).
 - **Consult Specs**: Always refer to `/docs` for architectural decisions before inventing behavior.
 
+## Environment Files
+- Use ONLY `.env.local` for all actual configuration and secrets (both dev and production)
+- `.env.example` is the template (committed to git, no secrets)
+- NEVER create or reference `.env.production` or other env files
+- All real values (DATABASE_URL, API keys, etc.) go in `.env.local`
+- Switch between SQLite and Supabase by changing DATABASE_URL in `.env.local`
+
 ## 💻 Coding Standards
 - **Functions**: Keep them small (20-50 lines), focused on a single responsibility.
 - **Naming**: Use clear, descriptive names.

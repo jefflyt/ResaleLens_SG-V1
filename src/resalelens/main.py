@@ -12,6 +12,7 @@ from fastapi.templating import Jinja2Templates
 
 from .config import settings
 from .database import Base, engine
+from .routers import admin
 from .scheduler import shutdown_scheduler, start_scheduler
 
 # Configure logging
@@ -53,6 +54,9 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+# Include routers
+app.include_router(admin.router)
 
 # Mount static files
 static_path = Path(__file__).parent.parent.parent / "static"

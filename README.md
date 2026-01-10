@@ -16,7 +16,7 @@ ResaleLens SG is a full-stack web application that provides data-driven insights
 ## Tech Stack
 
 - **Backend**: FastAPI (Python 3.11+)
-- **Database**: SQLAlchemy ORM + Alembic migrations (SQLite for dev, PostgreSQL for prod)
+- **Database**: Supabase (PostgreSQL) + SQLAlchemy ORM + Alembic migrations
 - **Frontend**: Jinja2 templates + HTMX for interactivity
 - **Job Scheduler**: APScheduler for automated data ingestion
 - **PDF Generation**: WeasyPrint
@@ -29,6 +29,7 @@ ResaleLens SG is a full-stack web application that provides data-driven insights
 
 - Python 3.11 or higher
 - [uv](https://github.com/astral-sh/uv) package manager (recommended) or pip
+- **Supabase account** with a project created ([Sign up free](https://supabase.com))
 
 ### Installation
 
@@ -43,26 +44,47 @@ ResaleLens SG is a full-stack web application that provides data-driven insights
    curl -LsSf https://astral.sh/uv/install.sh | sh
    ```
 
-3. **Install dependencies**:
+3. **Set up Supabase** (REQUIRED):
+   - Create a new project at [supabase.com](https://supabase.com)
+   - Go to **Settings → Database → Connection String → URI**
+   - Copy your connection string (use the **Connection Pooling** option)
+   - See [docs/technical/supabase_setup.md](docs/technical/supabase_setup.md) for detailed guide
+
+4. **Install dependencies**:
    ```bash
    uv sync
    ```
 
-4. **Set up environment variables**:
+5. **Configure environment variables**:
    ```bash
    cp .env.example .env.local
-   # Edit .env.local with your configuration and API keys
-   # Note: .env.local is git-ignored and safe for secrets
    ```
-
-5. **Initialize the database**:
+   
+   Edit `.env.local` and set **required** variables:
    ```bash
-   uv run python scripts/setup_db.py
+   # REQUIRED: Supabase connection string
+   DATABASE_URL=postgresql://postgres.[ref]:[password]@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres
+   
+   # REQUIRED: Data.gov.sg API (already set in .env.example)
+   DATA_GOV_SG_RESOURCE_ID=d_8b84c4ee58e3cfc0ece0d773c8ca6abc
+   
+   # REQUIRED: OneMap API token (get from https://www.onemap.gov.sg/apidocs/)
+   ONEMAP_API_TOKEN=your-token-here
    ```
 
-6. **Run database migrations**:
+6. **Validate environment**:
+   ```bash
+   uv run python scripts/validate_env.py
+   ```
+
+7. **Run database migrations**:
    ```bash
    uv run alembic upgrade head
+   ```
+
+8. **Verify connections**:
+   ```bash
+   uv run python scripts/test_connections.py
    ```
 
 ### Running the Application
@@ -133,7 +155,20 @@ ResaleLens is built as a monolithic FastAPI application with server-side renderi
 
 > **📌 Database Setup:**  
 > - **Local Development**: Uses SQLite (`data/resalelens.db`) - zero configuration needed  
-> - **Production/MVP**: Uses Supabase PostgreSQL (Singapore region) - see [PR1.1 Supabase Setup](docs/plans/PR1.1_SUPABASE_DATABASE_SETUP.md) for setup instructions
+> - **Production/MVP**: Uses Supabase PostgreSQL (Singapore region)
+> 
+> **Quick Supabase Setup**:
+> ```bash
+> # 1. Create Supabase project at https://app.supabase.com (Singapore region)
+> # 2. Copy connection string and add to .env.local:
+> DATABASE_URL="postgresql://postgres.[ref]:[password]@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres"
+> 
+> # 3. Run migrations and seed data:
+> uv run alembic upgrade head
+> uv run python scripts/seed_data.py
+> ```
+> 
+> **See [Supabase Setup Guide](docs/technical/supabase_setup.md) for detailed instructions.**
 
 ## Testing
 
