@@ -33,7 +33,10 @@ Implement automated data ingestion pipeline for HDB resale transactions and bloc
 3. **Assumption:** OneMap API geocoding is free for moderate usage (<1000 requests/day) or has acceptable fallback (manual geocoding or pre-built address database)
 4. **Assumption:** Ingestion can safely upsert (insert or update) existing records without data loss
 5. **Assumption:** Initial ingestion can process 100k+ transaction records in <30 minutes (acceptable for manual trigger)
-6. **Assumption:** SQLite is sufficient for development; PostgreSQL will handle production ingestion volume
+6. **Assumption:** Supabase PostgreSQL (from PR1.1) is used for production data ingestion and storage; SQLite remains for local development
+
+> **📌 Production Database:**  
+> After PR1.1 is implemented, this PR should ingest data into **Supabase PostgreSQL** for production use. Set `DATABASE_URL` to your Supabase connection string before running ingestion jobs to ensure external customers see real-time data.
 
 ---
 

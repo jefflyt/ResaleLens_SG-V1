@@ -5,8 +5,11 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-from src.resalelens.config import settings
-from src.resalelens.database import Base
+from resalelens.config import settings
+from resalelens.database import Base
+
+# Import all models to ensure they are registered with SQLAlchemy
+from resalelens.models import POI, Block, IngestionRun, Lead, Transaction, User  # noqa: F401
 
 # Alembic Config object
 config = context.config

@@ -1,14 +1,16 @@
 """Pytest configuration and fixtures."""
 
 from collections.abc import Generator
+from datetime import datetime
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from src.resalelens.database import Base, get_db
-from src.resalelens.main import app
+from resalelens.database import Base, get_db
+from resalelens.main import app
+from resalelens.models import IngestionRun, IngestionStatus
 
 # Use in-memory SQLite database for tests
 SQLALCHEMY_TEST_DATABASE_URL = "sqlite:///:memory:"
@@ -21,7 +23,7 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engin
 
 
 @pytest.fixture
-def test_db() -> Generator[Session, None, None]:
+def db_session() -> Generator[Session, None, None]:
     """
     Create a test database session.
 
@@ -41,12 +43,12 @@ def test_db() -> Generator[Session, None, None]:
 
 
 @pytest.fixture
-def client(test_db: Session) -> TestClient:
+def client(db_session: Session) -> TestClient:
     """
     Create a FastAPI test client with test database override.
 
     Args:
-        test_db: Test database session
+        db_session: Test database session
 
     Returns:
         TestClient: FastAPI test client
@@ -54,7 +56,7 @@ def client(test_db: Session) -> TestClient:
 
     def override_get_db() -> Generator[Session, None, None]:
         try:
-            yield test_db
+            yield db_session
         finally:
             pass
 
@@ -64,3 +66,27 @@ def client(test_db: Session) -> TestClient:
         yield test_client
 
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def sample_ingestion_run(db_session: Session) -> IngestionRun:
+    """
+    Create a sample ingestion run for testing.
+
+    Args:
+        db_session: Test database session
+
+    Returns:
+        IngestionRun: Sample ingestion run
+    """
+    run = IngestionRun(
+        dataset_name="test_transactions",
+        started_at=datetime.utcnow(),
+        completed_at=datetime.utcnow(),
+        status=IngestionStatus.SUCCESS,
+        rows_processed=0,
+    )
+    db_session.add(run)
+    db_session.commit()
+    db_session.refresh(run)
+    return run

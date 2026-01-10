@@ -127,9 +127,13 @@ ResaleLens is built as a monolithic FastAPI application with server-side renderi
 ### Key Design Decisions
 
 - **FastAPI + Jinja2 + HTMX** over React/Next.js for MVP simplicity
-- **SQLite for development**, PostgreSQL for production
+- **SQLite for local development**, **Supabase PostgreSQL for production/MVP validation**
 - **APScheduler** for automated data ingestion (HDB transactions, POIs, MRT locations)
 - **WeasyPrint** for PDF generation (Python-based, server-side)
+
+> **📌 Database Setup:**  
+> - **Local Development**: Uses SQLite (`data/resalelens.db`) - zero configuration needed  
+> - **Production/MVP**: Uses Supabase PostgreSQL (Singapore region) - see [PR1.1 Supabase Setup](docs/plans/PR1.1_SUPABASE_DATABASE_SETUP.md) for setup instructions
 
 ## Testing
 
