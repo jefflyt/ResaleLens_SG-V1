@@ -47,10 +47,13 @@ select = [
 ]
 ignore = [
     "E501",  # line too long (handled by formatter)
+    "B008",  # Do not perform function calls in argument defaults (FastAPI Depends pattern)
 ]
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]  # Allow unused imports in __init__.py
+"tests/conftest.py" = ["E402"]  # Module level import not at top (after SQLite pragma)
+"scripts/test_connections.py" = ["E402"]  # Module level import not at top (after dotenv)
 
 [tool.mypy]
 python_version = "3.11"
