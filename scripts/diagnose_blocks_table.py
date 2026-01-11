@@ -34,7 +34,7 @@ with engine.connect() as conn:
     # 2. Check table size
     try:
         result = conn.execute(text("""
-            SELECT 
+            SELECT
                 pg_size_pretty(pg_total_relation_size('blocks')) as total_size,
                 pg_size_pretty(pg_relation_size('blocks')) as table_size,
                 pg_size_pretty(pg_indexes_size('blocks')) as indexes_size
@@ -52,8 +52,8 @@ with engine.connect() as conn:
     # 3. Check active connections
     try:
         result = conn.execute(text("""
-            SELECT COUNT(*) 
-            FROM pg_stat_activity 
+            SELECT COUNT(*)
+            FROM pg_stat_activity
             WHERE datname = current_database()
               AND state = 'active'
         """))
@@ -67,7 +67,7 @@ with engine.connect() as conn:
     # 4. Check locks
     try:
         result = conn.execute(text("""
-            SELECT 
+            SELECT
                 locktype,
                 relation::regclass,
                 mode,

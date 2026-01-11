@@ -380,12 +380,12 @@ class BlockPOIRepository(BaseRepository):
     ) -> list:
         """
         Get POIs within distance of block, ordered by proximity.
-        
+
         Args:
             block_id: Block ID
             max_distance_m: Maximum distance in meters
             poi_type: Optional POI type filter
-            
+
         Returns:
             List of BlockPOI records with POI details
         """
@@ -409,11 +409,11 @@ class BlockPOIRepository(BaseRepository):
     ) -> list:
         """
         Get blocks within distance of POI, ordered by proximity.
-        
+
         Args:
             poi_id: POI ID
             max_distance_m: Maximum distance in meters
-            
+
         Returns:
             List of BlockPOI records
         """
@@ -434,11 +434,11 @@ class BlockPOIRepository(BaseRepository):
     ) -> int:
         """
         Bulk upsert distances for a block.
-        
+
         Args:
             block_id: Block ID
             poi_distances: List of dicts with poi_id and distance_m
-            
+
         Returns:
             Count of records inserted/updated
         """

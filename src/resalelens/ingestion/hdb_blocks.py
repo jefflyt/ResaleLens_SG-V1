@@ -101,7 +101,7 @@ class OneMapClient:
         Returns:
             Dictionary with latitude and longitude, or None if geocoding fails
         """
-        token = self._get_token()
+        self._get_token()
 
         # Try multiple address formats
         address_variants = [
@@ -239,7 +239,7 @@ def ingest_hdb_blocks(
 
         # Process each block
         processed_count = 0
-        for idx, (block, street, town, lease_commence_date) in enumerate(unique_blocks):
+        for _idx, (block, street, town, lease_commence_date) in enumerate(unique_blocks):
             try:
                 # Check if block already exists
                 existing = repo.get_by_block_and_street(block, street)

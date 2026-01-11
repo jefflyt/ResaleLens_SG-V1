@@ -35,7 +35,7 @@ def backfill_transaction_block_ids():
             AND t.block_id IS NULL
         """
 
-        result = db.execute(text(backfill_sql))
+        db.execute(text(backfill_sql))
         db.commit()
 
         print("✅ Backfill complete")
@@ -58,9 +58,9 @@ def backfill_transaction_block_ids():
 
             samples = db.execute(
                 text("""
-                    SELECT DISTINCT block, street 
-                    FROM transactions 
-                    WHERE block_id IS NULL 
+                    SELECT DISTINCT block, street
+                    FROM transactions
+                    WHERE block_id IS NULL
                     LIMIT 10
                 """)
             ).fetchall()

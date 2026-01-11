@@ -173,7 +173,7 @@ def test_database_connection() -> bool:
 
         # Test connection
         db = SessionLocal()
-        result = db.execute(text("SELECT 1")).scalar()
+        db.execute(text("SELECT 1")).scalar()
         db.close()
 
         database_url = os.getenv("DATABASE_URL", "")

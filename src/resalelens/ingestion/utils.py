@@ -216,10 +216,10 @@ def validate_transaction_record(record: dict[str, Any]) -> bool:
 def normalize_street_name(street: str) -> str:
     """
     Normalize street name by expanding common abbreviations.
-    
+
     This ensures consistency with OneMap API format and improves
     data quality for geocoding and display.
-    
+
     Supported abbreviations (19 total):
     - ST → STREET, AVE → AVENUE, DR → DRIVE, RD → ROAD
     - CRES → CRESCENT, PL → PLACE, TER → TERRACE, CL → CLOSE
@@ -227,13 +227,13 @@ def normalize_street_name(street: str) -> str:
     - GDN → GARDEN, GDNS → GARDENS
     - LOR → LORONG, JLN → JALAN
     - UPP → UPPER, LWR → LOWER, NTH → NORTH, STH → SOUTH
-    
+
     Args:
         street: Street name to normalize
-        
+
     Returns:
         Normalized street name with expanded abbreviations
-        
+
     Examples:
         >>> normalize_street_name("ANG MO KIO ST")
         'ANG MO KIO STREET'

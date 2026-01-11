@@ -16,7 +16,7 @@ with engine.connect() as conn:
 
     # Check date range
     result = conn.execute(text("""
-        SELECT 
+        SELECT
             MIN(date) as earliest,
             MAX(date) as latest,
             COUNT(DISTINCT date) as unique_dates
@@ -28,7 +28,7 @@ with engine.connect() as conn:
 
     # Check ingestion runs
     result = conn.execute(text("""
-        SELECT 
+        SELECT
             id,
             dataset_name,
             status,

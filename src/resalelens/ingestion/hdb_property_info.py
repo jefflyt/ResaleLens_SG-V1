@@ -13,12 +13,12 @@ from .utils import fetch_json_with_retry, log_ingestion_run
 def normalize_street_name(street: str) -> str:
     """
     Normalize street name for matching.
-    
+
     Handles abbreviations and case differences.
-    
+
     Args:
         street: Street name to normalize
-        
+
     Returns:
         Normalized street name
     """
@@ -70,15 +70,15 @@ def parse_int(value: str) -> int | None:
 def ingest_hdb_property_info(session: Session) -> dict[str, int]:
     """
     Ingest HDB property information from data.gov.sg API.
-    
+
     Enriches existing blocks with official HDB property data including:
     - Building characteristics (floors, year built, total units)
     - Facility flags (commercial, hawker, carpark, etc.)
     - Unit mix distribution
-    
+
     Args:
         session: SQLAlchemy session
-        
+
     Returns:
         Dictionary with ingestion summary:
         - total_fetched: Total property records fetched

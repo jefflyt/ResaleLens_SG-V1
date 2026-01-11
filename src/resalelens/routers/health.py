@@ -21,7 +21,7 @@ async def health_check():
 async def database_health(db: Session = Depends(get_db)):
     """
     Check database health and connectivity.
-    
+
     Returns database status, connection pool info, and response latency.
     Useful for monitoring and alerting in production.
     """

@@ -53,13 +53,13 @@ def upgrade() -> None:
     # Only calculate for distances <= 2000m (2km)
     populate_sql = """
     INSERT INTO block_pois (block_id, poi_id, distance_m, created_at)
-    SELECT 
+    SELECT
         block_id,
         poi_id,
         distance_m,
         NOW() AS created_at
     FROM (
-        SELECT 
+        SELECT
             b.id AS block_id,
             p.id AS poi_id,
             -- Haversine formula for distance in meters
@@ -74,8 +74,8 @@ def upgrade() -> None:
             ) AS distance_m
         FROM blocks b
         CROSS JOIN pois p
-        WHERE 
-            b.latitude IS NOT NULL 
+        WHERE
+            b.latitude IS NOT NULL
             AND b.longitude IS NOT NULL
             AND (
                 -- Quick bounding box filter (approx 2km = 0.018 degrees)
