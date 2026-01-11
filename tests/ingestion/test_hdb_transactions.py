@@ -93,6 +93,28 @@ class TestHDBTransactionsIngestion:
         self, mock_fetch: MagicMock, db_session: Session
     ) -> None:
         """Test updating existing transaction."""
+        # Create a block first to satisfy foreign key constraint
+        from resalelens.models import Block
+        
+        block = Block(
+            block="123",
+            street="Test Street",
+            town="Test Town",
+        )
+        db_session.add(block)
+        db_session.commit()
+        
+        # Create ingestion run first (needed for foreign key)
+        run = IngestionRun(
+            id=1,
+            dataset_name="hdb_transactions",
+            started_at=datetime.utcnow(),
+            status=IngestionStatus.SUCCESS,
+            rows_processed=0,
+        )
+        db_session.add(run)
+        db_session.commit()
+        
         # Create existing transaction
         existing = Transaction(
             date=datetime.strptime("2024-01", "%Y-%m").date(),
@@ -106,19 +128,9 @@ class TestHDBTransactionsIngestion:
             town="Test Town",
             flat_model="Improved",
             ingestion_run_id=1,
+            block_id=block.id,  # Link to block
         )
         db_session.add(existing)
-        db_session.commit()
-
-        # Create ingestion run for existing transaction
-        run = IngestionRun(
-            id=1,
-            dataset_name="hdb_transactions",
-            started_at=datetime.utcnow(),
-            status=IngestionStatus.SUCCESS,
-            rows_processed=0,
-        )
-        db_session.add(run)
         db_session.commit()
 
         # Mock API response with updated price
