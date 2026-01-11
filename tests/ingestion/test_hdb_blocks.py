@@ -4,7 +4,6 @@ import os
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 
-import pytest
 from sqlalchemy.orm import Session
 
 from resalelens.ingestion.hdb_blocks import OneMapClient, ingest_hdb_blocks

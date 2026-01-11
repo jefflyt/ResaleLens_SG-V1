@@ -1,7 +1,9 @@
-# PR7 Planning Note: Admin Dashboard & Lead Inbox Enhancements
+# PR8: Admin Operations Dashboard
 
 ## Overview
-PR7 should include a comprehensive admin dashboard with authentication, lead management, and data ingestion controls.
+PR8 provides a comprehensive admin dashboard for data operations, including ingestion monitoring, manual triggers, and system health checks. This PR builds on PR7c's admin authentication to add operational tooling for managing data pipelines.
+
+**Dependencies:** PR7c (Admin authentication must be implemented first)
 
 ---
 
@@ -255,6 +257,66 @@ Server returns updated card HTML fragment with new status and timestamp.
 **Update `README.md`:**
 - Add section on accessing admin dashboard
 - Document how to create initial admin user
+
+---
+
+## 12. Ingestion Metrics Dashboard (Optional Enhancement)
+
+**Purpose:** Provide visual monitoring of data ingestion performance and history.
+
+### Features
+- **Metrics Overview Cards:**
+  - Success rate (last 30 days)
+  - Total transactions in database
+  - Average ingestion time
+  - Last successful run timestamp
+
+- **Ingestion History Chart:**
+  - Line/bar chart showing rows processed over time
+  - Color-coded by status (green=success, red=failed)
+  - X-axis: Date, Y-axis: Rows processed
+  - Use Chart.js or similar lightweight library
+
+- **Recent Runs Table:**
+  - Last 30 runs with details
+  - Columns: Dataset, Started, Duration, Rows, Status
+  - Sortable and filterable
+
+### Implementation Estimate
+- **Complexity:** Medium-Large (4-6 hours)
+- **Files:**
+  - `src/resalelens/routers/admin.py` (~80 lines) - Metrics API endpoint
+  - `templates/admin/ingestion_metrics.html` (~150 lines) - Dashboard UI
+  - `static/js/ingestion-charts.js` (~100 lines) - Chart rendering
+  - Tests (~50 lines)
+- **Total:** ~380 lines of code
+
+### API Endpoint
+```python
+@router.get("/admin/ingestion/metrics")
+async def get_ingestion_metrics(db: Session = Depends(get_db)):
+    """Get ingestion metrics for dashboard."""
+    runs = db.query(IngestionRun)\
+        .filter(IngestionRun.started_at >= datetime.utcnow() - timedelta(days=30))\
+        .order_by(IngestionRun.started_at.desc())\
+        .all()
+    
+    total = len(runs)
+    successful = len([r for r in runs if r.status == "SUCCESS"])
+    
+    return {
+        "runs": runs,
+        "success_rate": (successful / total * 100) if total > 0 else 0,
+        "total_transactions": db.query(Transaction).count(),
+        "last_run": runs[0] if runs else None
+    }
+```
+
+### UI Components
+- Metrics cards with icons
+- Chart.js line chart for ingestion history
+- Responsive table for recent runs
+- Export to CSV button (optional)
 
 ---
 

@@ -1,6 +1,5 @@
 """Unit tests for ingestion utilities."""
 
-from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -13,7 +12,7 @@ from resalelens.ingestion.utils import (
     retry_on_failure,
     validate_transaction_record,
 )
-from resalelens.models import IngestionRun, IngestionStatus
+from resalelens.models import IngestionStatus
 
 
 class TestRetryDecorator:

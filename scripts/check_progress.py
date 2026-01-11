@@ -1,7 +1,8 @@
 """Quick script to check ingestion progress."""
 import os
-from sqlalchemy import create_engine, text
+
 from dotenv import load_dotenv
+from sqlalchemy import create_engine, text
 
 load_dotenv(".env.local")
 
@@ -12,7 +13,7 @@ with engine.connect() as conn:
     result = conn.execute(text("SELECT COUNT(*) as count FROM transactions"))
     count = result.scalar()
     print(f"Total transactions: {count:,}")
-    
+
     # Check date range
     result = conn.execute(text("""
         SELECT 
@@ -24,7 +25,7 @@ with engine.connect() as conn:
     row = result.fetchone()
     print(f"Date range: {row[0]} to {row[1]}")
     print(f"Unique dates: {row[2]}")
-    
+
     # Check ingestion runs
     result = conn.execute(text("""
         SELECT 

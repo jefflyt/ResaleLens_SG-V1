@@ -48,12 +48,12 @@ def test_data_gov_sg() -> bool:
         total = result.get("total", 0)
         records = result.get("records", [])
 
-        print(f"\n✅ SUCCESS!")
+        print("\n✅ SUCCESS!")
         print(f"   Total records available: {total:,}")
         print(f"   Sample records fetched: {len(records)}")
 
         if records:
-            print(f"\n📋 Sample record:")
+            print("\n📋 Sample record:")
             sample = records[0]
             print(f"   Month: {sample.get('month')}")
             print(f"   Town: {sample.get('town')}")
@@ -76,7 +76,7 @@ def test_onemap_api() -> bool:
 
     # Check for pre-obtained token first
     token = os.getenv("ONEMAP_API_TOKEN")
-    
+
     if token:
         print("Using pre-obtained API token from ONEMAP_API_TOKEN")
         print(f"Token: {token[:20]}..." if len(token) > 20 else "Token: (short)")
@@ -146,7 +146,7 @@ def test_onemap_api() -> bool:
         results = geo_response.get("results", [])
         if results:
             first = results[0]
-            print(f"   ✅ Geocoding successful!")
+            print("   ✅ Geocoding successful!")
             print(f"   Address: {first.get('ADDRESS')}")
             print(f"   Latitude: {first.get('LATITUDE')}")
             print(f"   Longitude: {first.get('LONGITUDE')}")
@@ -167,8 +167,9 @@ def test_database_connection() -> bool:
     print("=" * 60)
 
     try:
-        from resalelens.database import SessionLocal
         from sqlalchemy import text
+
+        from resalelens.database import SessionLocal
 
         # Test connection
         db = SessionLocal()
@@ -176,7 +177,7 @@ def test_database_connection() -> bool:
         db.close()
 
         database_url = os.getenv("DATABASE_URL", "")
-        
+
         if not database_url:
             print("❌ ERROR: DATABASE_URL not set")
             print("\n📝 To fix:")
@@ -184,17 +185,17 @@ def test_database_connection() -> bool:
             print("   2. Use Supabase connection string")
             print("   3. See docs/technical/supabase_setup.md")
             return False
-        
+
         # Should be PostgreSQL (Supabase)
         if database_url.startswith("postgresql"):
-            print(f"✅ Database connection successful!")
-            print(f"   Type: PostgreSQL (Supabase)")
+            print("✅ Database connection successful!")
+            print("   Type: PostgreSQL (Supabase)")
             # Don't print full URL for security
-            print(f"   Connected to Supabase")
+            print("   Connected to Supabase")
         else:
             print(f"⚠️  WARNING: Expected PostgreSQL, got: {database_url[:20]}...")
-            print(f"   Supabase (PostgreSQL) is required for this application")
-            print(f"   See docs/technical/supabase_setup.md for setup")
+            print("   Supabase (PostgreSQL) is required for this application")
+            print("   See docs/technical/supabase_setup.md for setup")
             return False
 
         return True

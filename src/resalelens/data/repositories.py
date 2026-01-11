@@ -362,3 +362,111 @@ class IngestionRunRepository(BaseRepository[IngestionRun]):
         )
         result = self.session.execute(query)
         return list(result.scalars().all())
+
+
+class BlockPOIRepository(BaseRepository):
+    """Repository for BlockPOI model with proximity queries."""
+
+    def __init__(self, session: Session):
+        """Initialize BlockPOIRepository."""
+        from ..models import BlockPOI
+        super().__init__(session, BlockPOI)
+
+    def get_pois_near_block(
+        self,
+        block_id: int,
+        max_distance_m: float = 1000,
+        poi_type: POIType | None = None,
+    ) -> list:
+        """
+        Get POIs within distance of block, ordered by proximity.
+        
+        Args:
+            block_id: Block ID
+            max_distance_m: Maximum distance in meters
+            poi_type: Optional POI type filter
+            
+        Returns:
+            List of BlockPOI records with POI details
+        """
+        from ..models import BlockPOI
+
+        query = (
+            select(BlockPOI)
+            .where(BlockPOI.block_id == block_id)
+            .where(BlockPOI.distance_m <= max_distance_m)
+            .order_by(BlockPOI.distance_m)
+        )
+
+        if poi_type:
+            query = query.join(POI).where(POI.poi_type == poi_type)
+
+        result = self.session.execute(query)
+        return list(result.scalars().all())
+
+    def get_blocks_near_poi(
+        self, poi_id: int, max_distance_m: float = 1000
+    ) -> list:
+        """
+        Get blocks within distance of POI, ordered by proximity.
+        
+        Args:
+            poi_id: POI ID
+            max_distance_m: Maximum distance in meters
+            
+        Returns:
+            List of BlockPOI records
+        """
+        from ..models import BlockPOI
+
+        query = (
+            select(BlockPOI)
+            .where(BlockPOI.poi_id == poi_id)
+            .where(BlockPOI.distance_m <= max_distance_m)
+            .order_by(BlockPOI.distance_m)
+        )
+
+        result = self.session.execute(query)
+        return list(result.scalars().all())
+
+    def upsert_distances(
+        self, block_id: int, poi_distances: list[dict[str, Any]]
+    ) -> int:
+        """
+        Bulk upsert distances for a block.
+        
+        Args:
+            block_id: Block ID
+            poi_distances: List of dicts with poi_id and distance_m
+            
+        Returns:
+            Count of records inserted/updated
+        """
+        from sqlalchemy.dialects.postgresql import insert
+
+        from ..models import BlockPOI
+
+        if not poi_distances:
+            return 0
+
+        # Prepare records
+        records = [
+            {
+                "block_id": block_id,
+                "poi_id": pd["poi_id"],
+                "distance_m": pd["distance_m"],
+            }
+            for pd in poi_distances
+        ]
+
+        # Use PostgreSQL INSERT ... ON CONFLICT DO UPDATE
+        stmt = insert(BlockPOI).values(records)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=["block_id", "poi_id"],
+            set_={"distance_m": stmt.excluded.distance_m},
+        )
+
+        self.session.execute(stmt)
+        self.session.commit()
+
+        return len(records)

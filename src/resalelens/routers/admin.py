@@ -6,7 +6,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from ..database import SessionLocal
-from ..ingestion import ingest_hdb_blocks, ingest_hdb_transactions
+from ..ingestion.hdb_blocks import ingest_hdb_blocks
+from ..ingestion.hdb_property_info import ingest_hdb_property_info
+from ..ingestion.hdb_transactions import ingest_hdb_transactions
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -25,6 +27,9 @@ async def trigger_ingestion(
     dataset: str = Query(
         "hdb_transactions", description="Dataset to ingest (hdb_transactions or hdb_blocks)"
     ),
+    incremental: bool = Query(
+        False, description="If True, only fetch new records since last run (for hdb_transactions)"
+    ),
     db: Session = Depends(get_db),
 ) -> dict[str, dict[str, int] | str]:
     """
@@ -32,6 +37,7 @@ async def trigger_ingestion(
 
     Args:
         dataset: Dataset name to ingest (hdb_transactions or hdb_blocks)
+        incremental: For hdb_transactions, only fetch records newer than latest in DB
         db: Database session
 
     Returns:
@@ -43,8 +49,8 @@ async def trigger_ingestion(
     """
     try:
         if dataset == "hdb_transactions":
-            print("Triggering HDB transactions ingestion...")
-            summary = ingest_hdb_transactions(db)
+            print(f"Triggering HDB transactions ingestion (incremental={incremental})...")
+            summary = ingest_hdb_transactions(db, incremental=incremental)
             return {
                 "status": "success",
                 "dataset": dataset,
@@ -58,10 +64,18 @@ async def trigger_ingestion(
                 "dataset": dataset,
                 "summary": summary,
             }
+        elif dataset == "hdb_property_info":
+            print("Triggering HDB property information ingestion...")
+            summary = ingest_hdb_property_info(db)
+            return {
+                "status": "success",
+                "dataset": dataset,
+                "summary": summary,
+            }
         else:
             raise HTTPException(
                 status_code=400,
-                detail=f"Invalid dataset: {dataset}. Must be 'hdb_transactions' or 'hdb_blocks'",
+                detail=f"Invalid dataset: {dataset}. Must be 'hdb_transactions', 'hdb_blocks', or 'hdb_property_info'",
             )
 
     except ValueError as e:

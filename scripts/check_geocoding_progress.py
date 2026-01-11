@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Check block geocoding progress."""
 
+
 from src.resalelens.database import SessionLocal
-from src.resalelens.models import Block, IngestionRun
-from datetime import datetime
+from src.resalelens.models import Block
 
 db = SessionLocal()
 
@@ -28,7 +28,7 @@ if geocoded > 0 and remaining > 0:
     est_seconds = remaining * avg_time_per_block
     est_minutes = est_seconds / 60
     est_hours = est_minutes / 60
-    
+
     if est_hours > 1:
         print(f"Estimated time remaining: ~{est_hours:.1f} hours")
     else:

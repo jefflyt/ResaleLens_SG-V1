@@ -34,7 +34,7 @@ def check_env_var(name: str, placeholder_values: list[str]) -> tuple[bool, str]:
 
     # Hide sensitive values
     if any(x in name.lower() for x in ["password", "key", "secret"]):
-        return True, f"✅ SET (***)"
+        return True, "✅ SET (***)"
     else:
         return True, f"✅ SET: {value}"
 

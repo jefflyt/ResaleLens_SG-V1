@@ -5,7 +5,8 @@ Provides safety checks to prevent accidental data loss or corruption.
 """
 
 import os
-from typing import Callable, Literal
+from collections.abc import Callable
+from typing import Literal
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -99,7 +100,7 @@ class IngestionGuardrails:
 
         # Log state before
         state_before = IngestionGuardrails.check_database_state(db)
-        print(f"\n📊 Database state before ingestion:")
+        print("\n📊 Database state before ingestion:")
         print(f"   Transactions: {state_before['transactions']:,}")
         print(f"   Blocks: {state_before['blocks']:,}")
         print(f"   Ingestion runs: {state_before['ingestion_runs']:,}")
@@ -110,7 +111,7 @@ class IngestionGuardrails:
 
         # Log state after
         state_after = IngestionGuardrails.check_database_state(db)
-        print(f"\n📊 Database state after ingestion:")
+        print("\n📊 Database state after ingestion:")
         print(f"   Transactions: {state_after['transactions']:,} (+{state_after['transactions'] - state_before['transactions']:,})")
         print(f"   Blocks: {state_after['blocks']:,} (+{state_after['blocks'] - state_before['blocks']:,})")
         print(f"   Ingestion runs: {state_after['ingestion_runs']:,} (+{state_after['ingestion_runs'] - state_before['ingestion_runs']:,})")

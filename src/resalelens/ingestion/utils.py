@@ -211,3 +211,67 @@ def validate_transaction_record(record: dict[str, Any]) -> bool:
             return False
 
     return True
+
+
+def normalize_street_name(street: str) -> str:
+    """
+    Normalize street name by expanding common abbreviations.
+    
+    This ensures consistency with OneMap API format and improves
+    data quality for geocoding and display.
+    
+    Supported abbreviations (19 total):
+    - ST → STREET, AVE → AVENUE, DR → DRIVE, RD → ROAD
+    - CRES → CRESCENT, PL → PLACE, TER → TERRACE, CL → CLOSE
+    - CTRL → CENTRAL, PK → PARK, HTS → HEIGHTS
+    - GDN → GARDEN, GDNS → GARDENS
+    - LOR → LORONG, JLN → JALAN
+    - UPP → UPPER, LWR → LOWER, NTH → NORTH, STH → SOUTH
+    
+    Args:
+        street: Street name to normalize
+        
+    Returns:
+        Normalized street name with expanded abbreviations
+        
+    Examples:
+        >>> normalize_street_name("ANG MO KIO ST")
+        'ANG MO KIO STREET'
+        >>> normalize_street_name("BEDOK NTH AVE 3")
+        'BEDOK NORTH AVENUE 3'
+    """
+    # Convert to uppercase and strip whitespace
+    normalized = street.upper().strip()
+
+    # Expand common abbreviations
+    # Note: We use " ABBR " (with spaces) to avoid partial matches
+    abbreviations = {
+        " ST ": " STREET ",
+        " AVE ": " AVENUE ",
+        " DR ": " DRIVE ",
+        " RD ": " ROAD ",
+        " CRES ": " CRESCENT ",
+        " PL ": " PLACE ",
+        " TER ": " TERRACE ",
+        " CL ": " CLOSE ",
+        " CTRL ": " CENTRAL ",
+        " PK ": " PARK ",
+        " HTS ": " HEIGHTS ",
+        " GDN ": " GARDEN ",
+        " GDNS ": " GARDENS ",
+        " LOR ": " LORONG ",
+        " JLN ": " JALAN ",
+        " UPP ": " UPPER ",
+        " LWR ": " LOWER ",
+        " NTH ": " NORTH ",
+        " STH ": " SOUTH ",
+    }
+
+    # Add spaces at start/end to catch abbreviations at boundaries
+    normalized = f" {normalized} "
+
+    for abbr, full in abbreviations.items():
+        normalized = normalized.replace(abbr, full)
+
+    # Remove the added spaces and return
+    return normalized.strip()

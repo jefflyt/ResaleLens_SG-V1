@@ -4,31 +4,42 @@ import os
 import time
 from datetime import datetime
 
+from sqlalchemy import func
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from ..models import Transaction
-from .utils import fetch_json_with_retry, log_ingestion_run, parse_date, validate_transaction_record
+from .utils import (
+    fetch_json_with_retry,
+    log_ingestion_run,
+    normalize_street_name,
+    parse_date,
+    validate_transaction_record,
+)
 
 
-def ingest_hdb_transactions(session: Session) -> dict[str, int]:
+def ingest_hdb_transactions(session: Session, incremental: bool = False) -> dict[str, int]:
     """
     Ingest HDB resale transactions from data.gov.sg API using bulk upsert.
 
-    Fetches all HDB resale transaction records from data.gov.sg API (paginated),
+    Fetches HDB resale transaction records from data.gov.sg API (paginated),
     validates and parses records, and bulk upserts to the transactions table using
     PostgreSQL's INSERT ... ON CONFLICT for optimal performance.
 
     Args:
         session: SQLAlchemy session
+        incremental: If True, only fetch records newer than the latest transaction date.
+                    If False (default), fetch all records (full refresh).
 
     Returns:
         Dictionary with ingestion summary:
         - total_fetched: Total records fetched from API
-        - inserted: Number of new records inserted
+        - inserted: Number of new records inserted (or upserted)
         - updated: Number of existing records updated (always 0 with bulk upsert)
-        - skipped: Number of invalid records skipped
+        - skipped: Number of invalid/duplicate records skipped
         - errors: Number of records that failed to process
+        - incremental: Whether incremental mode was used
+        - since_date: Start date for incremental sync (if applicable)
 
     Raises:
         ValueError: If required environment variables are missing
@@ -49,12 +60,26 @@ def ingest_hdb_transactions(session: Session) -> dict[str, int]:
     delay_between_requests = 60.0 / requests_per_minute if requests_per_minute > 0 else 1.0
     max_records = int(os.getenv("INGESTION_MAX_RECORDS", "0"))  # 0 = no limit
 
+    # Incremental sync: determine start date
+    since_date = None
+    if incremental:
+        # Get the latest transaction date from the database
+        max_date = session.query(func.max(Transaction.date)).scalar()
+        if max_date:
+            since_date = max_date
+            print(f"📅 Incremental sync: fetching records since {since_date}")
+        else:
+            print("ℹ️  No existing data found, falling back to full refresh")
+            incremental = False  # No data yet, do full refresh
+
     summary = {
         "total_fetched": 0,
         "inserted": 0,
         "updated": 0,
         "skipped": 0,
         "errors": 0,
+        "incremental": incremental,
+        "since_date": str(since_date) if since_date else None,
     }
 
     with log_ingestion_run(session, "hdb_transactions") as run:
@@ -98,11 +123,16 @@ def ingest_hdb_transactions(session: Session) -> dict[str, int]:
                         # Parse date
                         date_obj = parse_date(record["month"])
 
+                        # Incremental sync: skip records older than since_date
+                        if since_date and date_obj.date() <= since_date:
+                            summary["skipped"] += 1
+                            continue
+
                         # Add to batch
                         transactions_batch.append({
                             "date": date_obj.date(),
                             "block": record["block"],
-                            "street": record["street_name"],
+                            "street": normalize_street_name(record["street_name"]),
                             "flat_type": record["flat_type"],
                             "storey_range": record["storey_range"],
                             "floor_area_sqm": float(record["floor_area_sqm"]),
@@ -128,7 +158,7 @@ def ingest_hdb_transactions(session: Session) -> dict[str, int]:
                     # (same record appearing twice in one INSERT)
                     seen_keys = set()
                     deduplicated_batch = []
-                    
+
                     for txn in transactions_batch:
                         # Create unique key from constraint columns
                         key = (
@@ -139,17 +169,17 @@ def ingest_hdb_transactions(session: Session) -> dict[str, int]:
                             txn["storey_range"],
                             txn["floor_area_sqm"],
                         )
-                        
+
                         if key not in seen_keys:
                             seen_keys.add(key)
                             deduplicated_batch.append(txn)
                         else:
                             summary["skipped"] += 1  # Count as skipped duplicate
-                    
+
                     print(f"Bulk upserting {len(deduplicated_batch)} records (skipped {len(transactions_batch) - len(deduplicated_batch)} in-batch duplicates)...")
-                    
+
                     stmt = insert(Transaction).values(deduplicated_batch)
-                    
+
                     # On conflict, update the existing record
                     stmt = stmt.on_conflict_do_update(
                         index_elements=['block', 'street', 'flat_type', 'date', 'storey_range', 'floor_area_sqm'],
@@ -162,13 +192,13 @@ def ingest_hdb_transactions(session: Session) -> dict[str, int]:
                             'updated_at': stmt.excluded.updated_at,
                         }
                     )
-                    
+
                     session.execute(stmt)
                     session.commit()
-                    
+
                     # Track inserted count (we can't distinguish inserts vs updates with bulk upsert)
                     summary["inserted"] += len(deduplicated_batch)
-                    print(f"✅ Batch upserted successfully")
+                    print("✅ Batch upserted successfully")
 
                 summary["total_fetched"] += len(records)
 

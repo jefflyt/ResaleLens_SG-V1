@@ -119,6 +119,7 @@ class Transaction(Base):
     flat_model: Mapped[str] = mapped_column(String(100), nullable=False)
     latitude: Mapped[float | None] = mapped_column(Numeric(10, 7), nullable=True)
     longitude: Mapped[float | None] = mapped_column(Numeric(10, 7), nullable=True)
+    block_id: Mapped[int | None] = mapped_column(ForeignKey("blocks.id"), nullable=True)
     ingestion_run_id: Mapped[int] = mapped_column(ForeignKey("ingestion_runs.id"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=datetime.utcnow, nullable=False
@@ -128,6 +129,7 @@ class Transaction(Base):
     )
 
     # Relationships
+    block_ref: Mapped["Block"] = relationship("Block", back_populates="transactions")
     ingestion_run: Mapped["IngestionRun"] = relationship(
         "IngestionRun", back_populates="transactions"
     )
@@ -154,6 +156,7 @@ class Transaction(Base):
         ),
         Index("ix_transactions_town_flat_type_date", "town", "flat_type", "date"),
         Index("ix_transactions_lat_lng", "latitude", "longitude"),
+        Index("ix_transactions_block_id", "block_id"),
         CheckConstraint("floor_area_sqm > 0", name="check_floor_area_positive"),
         CheckConstraint("price > 0", name="check_price_positive"),
         CheckConstraint("latitude >= -90 AND latitude <= 90", name="check_latitude_range"),
@@ -178,8 +181,47 @@ class Block(Base):
     longitude: Mapped[float | None] = mapped_column(Numeric(10, 7), nullable=True)
     lease_commence_year: Mapped[int | None] = mapped_column(Integer, nullable=True)
     flat_mix_distribution: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+
+    # HDB Property Information fields
+    # Building characteristics
+    max_floor_lvl: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    year_completed: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    total_dwelling_units: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    # Facility flags
+    residential: Mapped[bool | None] = mapped_column(Boolean, nullable=True, default=True)
+    commercial: Mapped[bool | None] = mapped_column(Boolean, nullable=True, default=False)
+    market_hawker: Mapped[bool | None] = mapped_column(Boolean, nullable=True, default=False)
+    multistorey_carpark: Mapped[bool | None] = mapped_column(Boolean, nullable=True, default=False)
+    precinct_pavilion: Mapped[bool | None] = mapped_column(Boolean, nullable=True, default=False)
+    miscellaneous: Mapped[bool | None] = mapped_column(Boolean, nullable=True, default=False)
+
+    # Unit mix - sold units
+    room_1_sold: Mapped[int | None] = mapped_column("1room_sold", Integer, nullable=True)
+    room_2_sold: Mapped[int | None] = mapped_column("2room_sold", Integer, nullable=True)
+    room_3_sold: Mapped[int | None] = mapped_column("3room_sold", Integer, nullable=True)
+    room_4_sold: Mapped[int | None] = mapped_column("4room_sold", Integer, nullable=True)
+    room_5_sold: Mapped[int | None] = mapped_column("5room_sold", Integer, nullable=True)
+    exec_sold: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    multigen_sold: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    studio_apartment_sold: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    # Unit mix - rental units
+    room_1_rental: Mapped[int | None] = mapped_column("1room_rental", Integer, nullable=True)
+    room_2_rental: Mapped[int | None] = mapped_column("2room_rental", Integer, nullable=True)
+    room_3_rental: Mapped[int | None] = mapped_column("3room_rental", Integer, nullable=True)
+    other_room_rental: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
     last_updated: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=datetime.utcnow, nullable=False
+    )
+
+    # Relationships
+    transactions: Mapped[list["Transaction"]] = relationship(
+        "Transaction", back_populates="block_ref"
+    )
+    nearby_pois: Mapped[list["BlockPOI"]] = relationship(
+        "BlockPOI", back_populates="block"
     )
 
     # Constraints and Indexes
@@ -210,6 +252,11 @@ class POI(Base):
     longitude: Mapped[float] = mapped_column(Numeric(10, 7), nullable=False)
     last_updated: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=datetime.utcnow, nullable=False
+    )
+
+    # Relationships
+    nearby_blocks: Mapped[list["BlockPOI"]] = relationship(
+        "BlockPOI", back_populates="poi"
     )
 
     # Indexes
@@ -260,3 +307,32 @@ class Lead(Base):
 
     def __repr__(self) -> str:
         return f"<Lead(id={self.id}, name={self.name}, email={self.email}, status={self.status})>"
+
+
+class BlockPOI(Base):
+    """Junction table for Block-POI relationships with pre-calculated distances."""
+
+    __tablename__ = "block_pois"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    block_id: Mapped[int] = mapped_column(ForeignKey("blocks.id"), nullable=False)
+    poi_id: Mapped[int] = mapped_column(ForeignKey("pois.id"), nullable=False)
+    distance_m: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=datetime.utcnow, nullable=False
+    )
+
+    # Relationships
+    block: Mapped["Block"] = relationship("Block", back_populates="nearby_pois")
+    poi: Mapped["POI"] = relationship("POI", back_populates="nearby_blocks")
+
+    # Constraints and Indexes
+    __table_args__ = (
+        UniqueConstraint("block_id", "poi_id", name="uq_block_poi"),
+        Index("ix_block_pois_block_id_distance", "block_id", "distance_m"),
+        Index("ix_block_pois_poi_id", "poi_id"),
+        CheckConstraint("distance_m >= 0", name="check_distance_positive"),
+    )
+
+    def __repr__(self) -> str:
+        return f"<BlockPOI(block_id={self.block_id}, poi_id={self.poi_id}, distance={self.distance_m}m)>"

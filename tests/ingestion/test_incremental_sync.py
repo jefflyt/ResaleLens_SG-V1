@@ -1,11 +1,11 @@
 """Tests for incremental sync functionality."""
 
-import pytest
 from datetime import date, datetime
+
 from sqlalchemy.orm import Session
 
 from resalelens.ingestion.hdb_transactions import ingest_hdb_transactions
-from resalelens.models import Transaction, IngestionRun, IngestionStatus
+from resalelens.models import IngestionRun, IngestionStatus, Transaction
 
 
 class TestIncrementalSync:
@@ -15,13 +15,13 @@ class TestIncrementalSync:
         """Test incremental sync skips old records when data exists."""
         # Create dependencies first
         from resalelens.models import Block
-        
+
         run = IngestionRun(id=1, dataset_name="hdb_transactions", started_at=datetime.utcnow(), status=IngestionStatus.SUCCESS, rows_processed=0)
         db_session.add(run)
         block = Block(block="123", street="Test Street", town="Test Town")
         db_session.add(block)
         db_session.commit()
-        
+
         # Create existing transaction with date 2024-01-01
         existing_txn = Transaction(
             date=date(2024, 1, 1),
@@ -128,13 +128,13 @@ class TestIncrementalSync:
         """Test full refresh mode processes all records regardless of date."""
         # Create dependencies first
         from resalelens.models import Block
-        
+
         run = IngestionRun(id=1, dataset_name="hdb_transactions", started_at=datetime.utcnow(), status=IngestionStatus.SUCCESS, rows_processed=0)
         db_session.add(run)
         block = Block(block="123", street="Test Street", town="Test Town")
         db_session.add(block)
         db_session.commit()
-        
+
         # Create existing transaction
         existing_txn = Transaction(
             date=date(2024, 1, 1),

@@ -12,7 +12,7 @@ from fastapi.templating import Jinja2Templates
 
 from .config import settings
 from .database import Base, engine
-from .routers import admin
+from .routers import admin, health
 from .scheduler import shutdown_scheduler, start_scheduler
 
 # Configure logging
@@ -56,6 +56,7 @@ app = FastAPI(
 )
 
 # Include routers
+app.include_router(health.router)
 app.include_router(admin.router)
 
 # Mount static files
@@ -66,17 +67,6 @@ app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
 # Configure Jinja2 templates
 templates_path = Path(__file__).parent.parent.parent / "templates"
 templates = Jinja2Templates(directory=str(templates_path))
-
-
-@app.get("/health")
-async def health_check() -> dict[str, str]:
-    """
-    Health check endpoint.
-
-    Returns:
-        dict: Application status
-    """
-    return {"status": "ok"}
 
 
 @app.get("/", response_class=HTMLResponse)

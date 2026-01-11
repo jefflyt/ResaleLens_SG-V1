@@ -95,7 +95,7 @@ class TestHDBTransactionsIngestion:
         """Test updating existing transaction."""
         # Create a block first to satisfy foreign key constraint
         from resalelens.models import Block
-        
+
         block = Block(
             block="123",
             street="Test Street",
@@ -103,7 +103,7 @@ class TestHDBTransactionsIngestion:
         )
         db_session.add(block)
         db_session.commit()
-        
+
         # Create ingestion run first (needed for foreign key)
         run = IngestionRun(
             id=1,
@@ -114,7 +114,7 @@ class TestHDBTransactionsIngestion:
         )
         db_session.add(run)
         db_session.commit()
-        
+
         # Create existing transaction
         existing = Transaction(
             date=datetime.strptime("2024-01", "%Y-%m").date(),

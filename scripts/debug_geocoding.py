@@ -2,9 +2,9 @@
 """Test script to debug geocoding failures."""
 
 from resalelens.database import SessionLocal
-from resalelens.models import Block
 from resalelens.ingestion.hdb_blocks import OneMapClient
 from resalelens.ingestion.utils import fetch_json_with_retry
+from resalelens.models import Block
 
 # Get a sample of failed blocks
 db = SessionLocal()
@@ -22,7 +22,7 @@ fail_count = 0
 
 for block_obj in failed_blocks:
     full_address = f"{block_obj.block} {block_obj.street}"
-    
+
     # Test direct API call
     try:
         response = fetch_json_with_retry(
@@ -39,7 +39,7 @@ for block_obj in failed_blocks:
     except Exception as e:
         api_success = False
         api_error = str(e)
-    
+
     # Test OneMapClient method
     try:
         client_result = client.geocode_address(full_address)
@@ -47,7 +47,7 @@ for block_obj in failed_blocks:
     except Exception as e:
         client_success = False
         client_error = str(e)
-    
+
     # Report
     print(f"\nAddress: {full_address}")
     print(f"  Direct API:    {'✅ SUCCESS' if api_success else '❌ FAILED'}")
@@ -56,15 +56,15 @@ for block_obj in failed_blocks:
     print(f"  Client method: {'✅ SUCCESS' if client_success else '❌ FAILED'}")
     if not client_success and 'client_error' in locals():
         print(f"    Error: {client_error}")
-    
+
     if api_success and not client_success:
-        print(f"  ⚠️  API works but client method fails!")
+        print("  ⚠️  API works but client method fails!")
         fail_count += 1
     elif client_success:
         success_count += 1
 
 print("\n" + "=" * 80)
-print(f"\nSummary:")
+print("\nSummary:")
 print(f"  Addresses that work with client: {success_count}/{len(failed_blocks)}")
 print(f"  API works but client fails: {fail_count}/{len(failed_blocks)}")
 

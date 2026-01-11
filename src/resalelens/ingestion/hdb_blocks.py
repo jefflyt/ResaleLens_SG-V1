@@ -21,7 +21,7 @@ class OneMapClient:
             "ONEMAP_API_URL", "https://www.onemap.gov.sg/api/common/elastic/search"
         )
         self.auth_url = "https://www.onemap.gov.sg/api/auth/post/getToken"
-        
+
         # Support both token-based and email/password auth
         self.token = os.getenv("ONEMAP_API_TOKEN")  # Pre-obtained token
         self.email = os.getenv("ONEMAP_EMAIL")
@@ -132,7 +132,7 @@ class OneMapClient:
                         "longitude": float(first_result.get("LONGITUDE", 0)),
                     }
 
-            except Exception as e:
+            except Exception:
                 # Try next variant
                 continue
 
@@ -231,7 +231,7 @@ def ingest_hdb_blocks(
         )
         summary["total_blocks"] = len(unique_blocks)
         print(f"Found {summary['total_blocks']} unique blocks to process")
-        
+
         # Apply batch size limit if specified
         if batch_size:
             unique_blocks = unique_blocks[:batch_size]
@@ -243,12 +243,12 @@ def ingest_hdb_blocks(
             try:
                 # Check if block already exists
                 existing = repo.get_by_block_and_street(block, street)
-                
+
                 # Skip if block already has coordinates and skip_existing is True
                 if skip_existing and existing and existing.latitude is not None:
                     print(f"Skipping {block} {street} (already geocoded)")
                     continue
-                
+
                 # Rate limiting: respect OneMap API limits
                 if processed_count > 0 and processed_count % 100 == 0:
                     print(f"Processed {processed_count}/{len(unique_blocks)} blocks. Pausing for rate limit...")
@@ -289,7 +289,7 @@ def ingest_hdb_blocks(
                     )
                     session.add(block_obj)
                     summary["inserted"] += 1
-                
+
                 # Increment processed count
                 processed_count += 1
 

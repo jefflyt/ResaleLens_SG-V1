@@ -18,7 +18,7 @@ class Settings:
     def __init__(self) -> None:
         # DATABASE_URL is required - no SQLite fallback
         self.database_url: str | None = os.getenv("DATABASE_URL")
-        
+
         if not self.database_url:
             print("\n❌ ERROR: DATABASE_URL environment variable is required")
             print("\n📝 To fix:")
@@ -28,16 +28,16 @@ class Settings:
             print("\nExample:")
             print("   DATABASE_URL=postgresql://postgres.[ref]:[password]@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres\n")
             sys.exit(1)
-        
+
         # Validate it's a PostgreSQL URL
         if not self.database_url.startswith("postgresql://"):
-            print(f"\n❌ ERROR: DATABASE_URL must be a PostgreSQL connection string")
+            print("\n❌ ERROR: DATABASE_URL must be a PostgreSQL connection string")
             print(f"   Got: {self.database_url[:50]}...")
             print("\n📝 Expected format:")
             print("   postgresql://postgres.[ref]:[password]@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres")
             print("\n   See docs/technical/supabase_setup.md for setup guide\n")
             sys.exit(1)
-        
+
         self.env: str = os.getenv("ENV", "development")
         self.debug: bool = os.getenv("DEBUG", "true").lower() == "true"
         self.secret_key: str = os.getenv("SECRET_KEY", "dev-secret-key-change-in-production")

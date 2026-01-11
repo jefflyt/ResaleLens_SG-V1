@@ -502,3 +502,8 @@ PR6 delivers two key transparency features: **Block X-Ray** (comprehensive block
 - Implement Block X-Ray service, Data Status service, and frontend templates
 - Comprehensive testing (unit, integration, manual verification)
 - Verify p95 latency <2s for Block X-Ray page
+
+
+---
+
+See also: [Phase 2: HDB Property Information Features](file:////Users/jefflee/Documents/AIProjects/ResaleLens_SG-V1/docs/plans/PR6_BLOCK_XRAY_DATA_STATUS_PHASE2.md)

@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from resalelens.models import (
     POI,
     Block,
+    BlockPOI,
     IngestionRun,
     IngestionStatus,
     Lead,
@@ -271,3 +272,235 @@ class TestLeadModel:
         db_session.refresh(lead)
         assert lead.filter_snapshot == {"town": "Bedok", "flat_type": "4 ROOM"}
         assert lead.shortlist_snapshot == {"blocks": ["101", "202"]}
+
+
+class TestTransactionBlockRelationship:
+    """Tests for Transaction-Block foreign key relationship (PR1.3a)."""
+
+    def test_transaction_block_ref_relationship(self, db_session):
+        """Test Transaction.block_ref loads Block correctly."""
+        # Create a block
+        block = Block(
+            block="101",
+            street="TEST STREET",
+            town="TEST TOWN",
+            last_updated=datetime.utcnow(),
+        )
+        db_session.add(block)
+        db_session.commit()
+
+        # Create ingestion run
+        run = IngestionRun(
+            dataset_name="test",
+            started_at=datetime.utcnow(),
+            status=IngestionStatus.SUCCESS,
+        )
+        db_session.add(run)
+        db_session.commit()
+
+        # Create transaction with block_id
+        txn = Transaction(
+            date=date(2024, 1, 1),
+            block="101",
+            street="TEST STREET",
+            flat_type="4 ROOM",
+            storey_range="07 TO 09",
+            floor_area_sqm=90.0,
+            price=450000.0,
+            lease_commence_date=1990,
+            town="TEST TOWN",
+            flat_model="Improved",
+            block_id=block.id,
+            ingestion_run_id=run.id,
+        )
+        db_session.add(txn)
+        db_session.commit()
+
+        # Test relationship
+        db_session.refresh(txn)
+        assert txn.block_ref is not None
+        assert txn.block_ref.id == block.id
+        assert txn.block_ref.block == "101"
+        assert txn.block_ref.street == "TEST STREET"
+
+    def test_block_transactions_relationship(self, db_session):
+        """Test Block.transactions returns list of transactions."""
+        # Create a block
+        block = Block(
+            block="202",
+            street="ANOTHER STREET",
+            town="ANOTHER TOWN",
+            last_updated=datetime.utcnow(),
+        )
+        db_session.add(block)
+        db_session.commit()
+
+        # Create ingestion run
+        run = IngestionRun(
+            dataset_name="test",
+            started_at=datetime.utcnow(),
+            status=IngestionStatus.SUCCESS,
+        )
+        db_session.add(run)
+        db_session.commit()
+
+        # Create multiple transactions for same block
+        for i in range(3):
+            txn = Transaction(
+                date=date(2024, 1, i + 1),
+                block="202",
+                street="ANOTHER STREET",
+                flat_type="4 ROOM",
+                storey_range=f"{i:02d} TO {i+2:02d}",
+                floor_area_sqm=90.0 + i,
+                price=450000.0 + (i * 10000),
+                lease_commence_date=1990,
+                town="ANOTHER TOWN",
+                flat_model="Improved",
+                block_id=block.id,
+                ingestion_run_id=run.id,
+            )
+            db_session.add(txn)
+        db_session.commit()
+
+        # Test relationship
+        db_session.refresh(block)
+        assert len(block.transactions) == 3
+        assert all(t.block_id == block.id for t in block.transactions)
+
+    def test_foreign_key_constraint(self, db_session, sample_ingestion_run):
+        """Test foreign key prevents orphaned transactions."""
+        # Try to create transaction with invalid block_id
+        txn = Transaction(
+            date=date(2024, 1, 1),
+            block="999",
+            street="NONEXISTENT STREET",
+            flat_type="4 ROOM",
+            storey_range="07 TO 09",
+            floor_area_sqm=90.0,
+            price=450000.0,
+            lease_commence_date=1990,
+            town="NONEXISTENT TOWN",
+            flat_model="Improved",
+            block_id=99999,  # Invalid block_id
+            ingestion_run_id=sample_ingestion_run.id,
+        )
+        db_session.add(txn)
+
+        with pytest.raises(IntegrityError):
+            db_session.commit()
+
+
+class TestBlockPOIModel:
+    """Tests for BlockPOI model (PR1.3b)."""
+
+    def test_block_poi_creation(self, db_session):
+        """Test creating a BlockPOI record."""
+        # Create block
+        block = Block(
+            block="101",
+            street="TEST STREET",
+            town="TEST TOWN",
+            latitude=1.3521,
+            longitude=103.8198,
+            last_updated=datetime.utcnow(),
+        )
+        db_session.add(block)
+
+        # Create POI
+        poi = POI(
+            poi_type=POIType.MRT,
+            name="Test MRT",
+            latitude=1.3700,
+            longitude=103.8494,
+            last_updated=datetime.utcnow(),
+        )
+        db_session.add(poi)
+        db_session.commit()
+
+        # Create BlockPOI
+        block_poi = BlockPOI(
+            block_id=block.id,
+            poi_id=poi.id,
+            distance_m=2127.0,  # Calculated distance
+        )
+        db_session.add(block_poi)
+        db_session.commit()
+
+        assert block_poi.id is not None
+        assert block_poi.block_id == block.id
+        assert block_poi.poi_id == poi.id
+        assert block_poi.distance_m == 2127.0
+
+    def test_block_poi_unique_constraint(self, db_session):
+        """Test unique constraint on (block_id, poi_id)."""
+        # Create block and POI
+        block = Block(
+            block="101",
+            street="TEST STREET",
+            town="TEST TOWN",
+            last_updated=datetime.utcnow(),
+        )
+        poi = POI(
+            poi_type=POIType.MRT,
+            name="Test MRT",
+            latitude=1.3700,
+            longitude=103.8494,
+            last_updated=datetime.utcnow(),
+        )
+        db_session.add_all([block, poi])
+        db_session.commit()
+
+        # Create first BlockPOI
+        bp1 = BlockPOI(block_id=block.id, poi_id=poi.id, distance_m=1000.0)
+        db_session.add(bp1)
+        db_session.commit()
+
+        # Try to create duplicate
+        bp2 = BlockPOI(block_id=block.id, poi_id=poi.id, distance_m=2000.0)
+        db_session.add(bp2)
+
+        with pytest.raises(IntegrityError):
+            db_session.commit()
+
+    def test_block_nearby_pois_relationship(self, db_session):
+        """Test Block.nearby_pois relationship."""
+        # Create block
+        block = Block(
+            block="101",
+            street="TEST STREET",
+            town="TEST TOWN",
+            latitude=1.3521,
+            longitude=103.8198,
+            last_updated=datetime.utcnow(),
+        )
+        db_session.add(block)
+
+        # Create multiple POIs
+        pois = []
+        for i in range(3):
+            poi = POI(
+                poi_type=POIType.MRT,
+                name=f"Test MRT {i}",
+                latitude=1.3700 + (i * 0.01),
+                longitude=103.8494,
+                last_updated=datetime.utcnow(),
+            )
+            pois.append(poi)
+            db_session.add(poi)
+        db_session.commit()
+
+        # Create BlockPOI records
+        for i, poi in enumerate(pois):
+            bp = BlockPOI(
+                block_id=block.id,
+                poi_id=poi.id,
+                distance_m=1000.0 + (i * 500),
+            )
+            db_session.add(bp)
+        db_session.commit()
+
+        # Test relationship
+        db_session.refresh(block)
+        assert len(block.nearby_pois) == 3
+        assert all(bp.block_id == block.id for bp in block.nearby_pois)
