@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from ..data.repositories import BlockRepository
 from ..models import Block, Transaction
-from .utils import fetch_json_with_retry, log_ingestion_run
+from .utils import fetch_json_with_retry, log_ingestion_run, normalize_street_name
 
 
 class OneMapClient:
@@ -89,7 +89,11 @@ class OneMapClient:
 
     def geocode_address(self, address: str) -> dict[str, float] | None:
         """
-        Geocode an address using OneMap API.
+        Geocode an address using OneMap API with multiple format attempts.
+
+        Tries multiple address formats to improve geocoding success rate:
+        1. Original address
+        2. Address with expanded abbreviations (ST -> STREET, AVE -> AVENUE, etc.)
 
         Args:
             address: Full address to geocode
@@ -99,55 +103,105 @@ class OneMapClient:
         """
         token = self._get_token()
 
-        try:
-            response = fetch_json_with_retry(
-                url=self.api_url,
-                params={
-                    "searchVal": address,
-                    "returnGeom": "Y",
-                    "getAddrDetails": "Y",  # Required parameter
-                },
-                headers={"Authorization": token},  # Token without 'Bearer' prefix
-                max_retries=2,
-            )
+        # Try multiple address formats
+        address_variants = [
+            address,  # Original
+            self._expand_abbreviations(address),  # Expanded abbreviations
+        ]
 
-            self.request_count += 1
+        for variant in address_variants:
+            try:
+                response = fetch_json_with_retry(
+                    url=self.api_url,
+                    params={
+                        "searchVal": variant,
+                        "returnGeom": "Y",
+                        "getAddrDetails": "Y",
+                    },
+                    max_retries=2,
+                )
 
-            results = response.get("results", [])
-            if not results:
-                return None
+                self.request_count += 1
 
-            # Return first result
-            first_result = results[0]
-            return {
-                "latitude": float(first_result.get("LATITUDE", 0)),
-                "longitude": float(first_result.get("LONGITUDE", 0)),
-            }
+                results = response.get("results", [])
+                if results:
+                    # Success! Return first result
+                    first_result = results[0]
+                    return {
+                        "latitude": float(first_result.get("LATITUDE", 0)),
+                        "longitude": float(first_result.get("LONGITUDE", 0)),
+                    }
 
-        except Exception as e:
-            print(f"Geocoding failed for address '{address}': {e}")
-            return None
+            except Exception as e:
+                # Try next variant
+                continue
+
+        # All variants failed
+        return None
+
+    def _expand_abbreviations(self, address: str) -> str:
+        """
+        Expand common street abbreviations to full words.
+
+        Args:
+            address: Address with potential abbreviations
+
+        Returns:
+            Address with expanded abbreviations
+        """
+        abbreviations = {
+            " ST ": " STREET ",
+            " AVE ": " AVENUE ",
+            " DR ": " DRIVE ",
+            " RD ": " ROAD ",
+            " CRES ": " CRESCENT ",
+            " PL ": " PLACE ",
+            " TER ": " TERRACE ",
+            " CL ": " CLOSE ",
+            " CTRL ": " CENTRAL ",
+            " PK ": " PARK ",
+            " HTS ": " HEIGHTS ",
+            " GDN ": " GARDEN ",
+            " GDNS ": " GARDENS ",
+            " LOR ": " LORONG ",
+            " JLN ": " JALAN ",
+            " UPP ": " UPPER ",
+            " LWR ": " LOWER ",
+            " NTH ": " NORTH ",
+            " STH ": " SOUTH ",
+            " E ": " EAST ",
+            " W ": " WEST ",
+        }
+
+        expanded = address.upper()
+        for abbr, full in abbreviations.items():
+            expanded = expanded.replace(abbr, full)
+
+        return expanded
 
 
-def ingest_hdb_blocks(session: Session) -> dict[str, int]:
+def ingest_hdb_blocks(
+    session: Session, batch_size: int | None = None, skip_existing: bool = True
+) -> dict[str, int]:
     """
-    Ingest HDB blocks by extracting unique blocks from transactions and geocoding.
+    Ingest HDB block metadata by geocoding unique blocks from transactions.
 
-    Extracts unique (block, street, town) combinations from ingested transactions,
-    geocodes addresses using OneMap API, and upserts to the blocks table.
+    This function extracts unique block addresses from the transactions table
+    and geocodes them using the OneMap API. It's designed to be run once to
+    populate the blocks table with geocoded coordinates.
 
     Args:
-        session: SQLAlchemy session
+        session: Database session
+        batch_size: Optional limit on number of blocks to process (for incremental runs)
+        skip_existing: If True, skip blocks that already have coordinates (default: True)
 
     Returns:
-        Dictionary with ingestion summary:
+        Dictionary with ingestion statistics:
         - total_blocks: Total unique blocks processed
         - inserted: Number of new blocks inserted
         - updated: Number of existing blocks updated
         - geocoded: Number of blocks successfully geocoded
         - geocoding_failed: Number of blocks where geocoding failed
-
-    Raises:
         Exception: If ingestion fails critically
     """
     repo = BlockRepository(session)
@@ -175,23 +229,33 @@ def ingest_hdb_blocks(session: Session) -> dict[str, int]:
             .group_by(Transaction.block, Transaction.street, Transaction.town, Transaction.lease_commence_date)
             .all()
         )
-
         summary["total_blocks"] = len(unique_blocks)
         print(f"Found {summary['total_blocks']} unique blocks to process")
+        
+        # Apply batch size limit if specified
+        if batch_size:
+            unique_blocks = unique_blocks[:batch_size]
+            print(f"Batch processing: limiting to {batch_size} blocks")
 
         # Process each block
+        processed_count = 0
         for idx, (block, street, town, lease_commence_date) in enumerate(unique_blocks):
             try:
-                # Rate limiting: respect OneMap API limits
-                if idx > 0 and idx % 100 == 0:
-                    print(f"Processed {idx}/{summary['total_blocks']} blocks. Pausing for rate limit...")
-                    time.sleep(2)  # 2-second pause every 100 requests
-
                 # Check if block already exists
                 existing = repo.get_by_block_and_street(block, street)
+                
+                # Skip if block already has coordinates and skip_existing is True
+                if skip_existing and existing and existing.latitude is not None:
+                    print(f"Skipping {block} {street} (already geocoded)")
+                    continue
+                
+                # Rate limiting: respect OneMap API limits
+                if processed_count > 0 and processed_count % 100 == 0:
+                    print(f"Processed {processed_count}/{len(unique_blocks)} blocks. Pausing for rate limit...")
+                    time.sleep(2)  # 2-second pause every 100 requests
 
                 # Geocode address
-                full_address = f"{block} {street}, Singapore"
+                full_address = f"{block} {street}"
                 geocode_result = onemap_client.geocode_address(full_address)
 
                 if geocode_result:
@@ -216,7 +280,7 @@ def ingest_hdb_blocks(session: Session) -> dict[str, int]:
                     # Create new block
                     block_obj = Block(
                         block=block,
-                        street=street,
+                        street=normalize_street_name(street),
                         town=town,
                         latitude=latitude,
                         longitude=longitude,
@@ -225,11 +289,14 @@ def ingest_hdb_blocks(session: Session) -> dict[str, int]:
                     )
                     session.add(block_obj)
                     summary["inserted"] += 1
+                
+                # Increment processed count
+                processed_count += 1
 
                 # Commit in batches
-                if (idx + 1) % 100 == 0:
+                if processed_count % 100 == 0:
                     session.commit()
-                    print(f"Batch committed: {idx + 1}/{summary['total_blocks']}")
+                    print(f"Batch committed: {processed_count}/{len(unique_blocks)}")
 
             except Exception as e:
                 print(f"Error processing block {block} {street}: {e}")
