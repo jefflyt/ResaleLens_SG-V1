@@ -39,20 +39,21 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engin
 def db_session() -> Generator[Session, None, None]:
     """
     Create a test database session.
+    
+    For PostgreSQL (Supabase), uses existing schema.
+    Tests should clean up their own data.
 
     Yields:
         Session: Test database session
     """
-    # Create tables
-    Base.metadata.create_all(bind=engine)
-
+    # Don't create/drop schema on PostgreSQL - schema already exists from migrations
+    # Tests should clean up their own test data
+    
     db = TestingSessionLocal()
     try:
         yield db
     finally:
         db.close()
-        # Drop tables after test
-        Base.metadata.drop_all(bind=engine)
 
 
 @pytest.fixture
