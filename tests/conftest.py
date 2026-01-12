@@ -1,34 +1,36 @@
 """Pytest configuration and fixtures."""
 
+import os
 from collections.abc import Generator
 from datetime import datetime
 
 import pytest
+from dotenv import load_dotenv
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
+
+# Load test environment
+load_dotenv(".env.local")
 
 from resalelens.database import Base, get_db
 from resalelens.main import app
 from resalelens.models import IngestionRun, IngestionStatus
 
-# Use in-memory SQLite database for tests
-SQLALCHEMY_TEST_DATABASE_URL = "sqlite:///:memory:"
+# Use PostgreSQL test database (Supabase)
+# Priority: DATABASE_URL_TEST > DATABASE_URL with test schema
+database_url = os.getenv("DATABASE_URL_TEST") or os.getenv("DATABASE_URL")
 
-engine = create_engine(
-    SQLALCHEMY_TEST_DATABASE_URL,
-    connect_args={"check_same_thread": False},
-)
+if not database_url:
+    raise ValueError(
+        "DATABASE_URL or DATABASE_URL_TEST must be set for tests. "
+        "Add to .env.local:\n"
+        "  DATABASE_URL=postgresql://...\n"
+        "  DATABASE_URL_TEST=postgresql://... (optional, for test isolation)"
+    )
 
-# Enable foreign key constraints for SQLite
-from sqlalchemy import event
-
-
-@event.listens_for(engine, "connect")
-def set_sqlite_pragma(dbapi_conn, connection_record):
-    cursor = dbapi_conn.cursor()
-    cursor.execute("PRAGMA foreign_keys=ON")
-    cursor.close()
+# Create test engine
+engine = create_engine(database_url)
 
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

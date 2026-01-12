@@ -52,9 +52,7 @@ dmypy.json
 .ruff_cache/
 
 # Project specific
-data/*.db
-data/*.sqlite
-data/*.sqlite3
+# Note: Using Supabase (PostgreSQL) only - no local database files
 !data/.gitkeep
 
 # Logs
