@@ -6,7 +6,16 @@ from typing import Any, Generic, TypeVar
 from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session
 
-from ..models import POI, Block, IngestionRun, Lead, LeadStatus, POIType, Transaction
+from ..models import (
+    POI,
+    Block,
+    BlockPOI,
+    IngestionRun,
+    Lead,
+    LeadStatus,
+    POIType,
+    Transaction,
+)
 
 T = TypeVar("T")
 
@@ -14,16 +23,16 @@ T = TypeVar("T")
 class BaseRepository(Generic[T]):
     """Base repository with common CRUD operations."""
 
-    def __init__(self, session: Session, model_class: type[T]):
+    def __init__(self, session: Session, model: type[T]):
         """
         Initialize repository.
 
         Args:
             session: SQLAlchemy session
-            model_class: Model class for this repository
+            model: Model class for this repository
         """
         self.session = session
-        self.model_class = model_class
+        self.model_class = model
 
     def get_by_id(self, id: int) -> T | None:
         """Get entity by ID."""
@@ -369,7 +378,6 @@ class BlockPOIRepository(BaseRepository):
 
     def __init__(self, session: Session):
         """Initialize BlockPOIRepository."""
-        from ..models import BlockPOI
         super().__init__(session, BlockPOI)
 
     def get_pois_near_block(
@@ -389,7 +397,6 @@ class BlockPOIRepository(BaseRepository):
         Returns:
             List of BlockPOI records with POI details
         """
-        from ..models import BlockPOI
 
         query = (
             select(BlockPOI)
@@ -417,7 +424,6 @@ class BlockPOIRepository(BaseRepository):
         Returns:
             List of BlockPOI records
         """
-        from ..models import BlockPOI
 
         query = (
             select(BlockPOI)
@@ -444,7 +450,6 @@ class BlockPOIRepository(BaseRepository):
         """
         from sqlalchemy.dialects.postgresql import insert
 
-        from ..models import BlockPOI
 
         if not poi_distances:
             return 0

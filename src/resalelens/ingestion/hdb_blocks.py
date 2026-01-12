@@ -1,183 +1,20 @@
 """HDB blocks ingestion with geocoding from OneMap API."""
 
-import os
+from __future__ import annotations
+
 import time
 from datetime import datetime
 
 from sqlalchemy import distinct
 from sqlalchemy.orm import Session
 
+from ..api.onemap import OneMapClient
 from ..data.repositories import BlockRepository
 from ..models import Block, Transaction
-from .utils import fetch_json_with_retry, log_ingestion_run, normalize_street_name
+from .utils import log_ingestion_run, normalize_street_name
 
+# OneMapClient class moved to src/resalelens/api/onemap.py
 
-class OneMapClient:
-    """Client for OneMap geocoding API with token management."""
-
-    def __init__(self) -> None:
-        """Initialize OneMap client."""
-        self.api_url = os.getenv(
-            "ONEMAP_API_URL", "https://www.onemap.gov.sg/api/common/elastic/search"
-        )
-        self.auth_url = "https://www.onemap.gov.sg/api/auth/post/getToken"
-
-        # Support both token-based and email/password auth
-        self.token = os.getenv("ONEMAP_API_TOKEN")  # Pre-obtained token
-        self.email = os.getenv("ONEMAP_EMAIL")
-        self.password = os.getenv("ONEMAP_PASSWORD")
-
-        self.token_expiry: datetime | None = None
-        self.request_count = 0
-        self.max_requests_per_token = 240  # Safety margin (250 limit)
-
-    def _get_token(self) -> str:
-        """
-        Get or refresh OneMap API token.
-
-        Returns:
-            Valid JWT token
-
-        Raises:
-            ValueError: If credentials are missing
-            Exception: If token request fails
-        """
-        # If we have a pre-obtained token, use it
-        if self.token and os.getenv("ONEMAP_API_TOKEN"):
-            print("Using pre-obtained OneMap API token from ONEMAP_API_TOKEN")
-            return self.token
-
-        # Otherwise, authenticate with email/password
-        if not self.email or not self.password:
-            raise ValueError(
-                "Either ONEMAP_API_TOKEN or both ONEMAP_EMAIL and ONEMAP_PASSWORD environment variables are required"
-            )
-
-        # Check if we need a new token
-        needs_token = (
-            self.token is None
-            or self.token_expiry is None
-            or datetime.utcnow() >= self.token_expiry
-            or self.request_count >= self.max_requests_per_token
-        )
-
-        if needs_token:
-            response = fetch_json_with_retry(
-                url=self.auth_url,
-                params={
-                    "email": self.email,
-                    "password": self.password,
-                },
-            )
-
-            self.token = response.get("access_token")
-            if not self.token:
-                raise Exception("Failed to obtain OneMap API token")
-
-            # Token expires in 3 days, but we'll refresh daily for safety
-            self.token_expiry = datetime.utcnow().replace(
-                hour=23, minute=59, second=59, microsecond=0
-            )
-            self.request_count = 0
-            print("OneMap API token obtained successfully")
-
-        # Token should now be set
-        if not self.token:
-            raise Exception("Failed to obtain OneMap API token after refresh")
-
-        return self.token
-
-    def geocode_address(self, address: str) -> dict[str, float] | None:
-        """
-        Geocode an address using OneMap API with multiple format attempts.
-
-        Tries multiple address formats to improve geocoding success rate:
-        1. Original address
-        2. Address with expanded abbreviations (ST -> STREET, AVE -> AVENUE, etc.)
-
-        Args:
-            address: Full address to geocode
-
-        Returns:
-            Dictionary with latitude and longitude, or None if geocoding fails
-        """
-        self._get_token()
-
-        # Try multiple address formats
-        address_variants = [
-            address,  # Original
-            self._expand_abbreviations(address),  # Expanded abbreviations
-        ]
-
-        for variant in address_variants:
-            try:
-                response = fetch_json_with_retry(
-                    url=self.api_url,
-                    params={
-                        "searchVal": variant,
-                        "returnGeom": "Y",
-                        "getAddrDetails": "Y",
-                    },
-                    max_retries=2,
-                )
-
-                self.request_count += 1
-
-                results = response.get("results", [])
-                if results:
-                    # Success! Return first result
-                    first_result = results[0]
-                    return {
-                        "latitude": float(first_result.get("LATITUDE", 0)),
-                        "longitude": float(first_result.get("LONGITUDE", 0)),
-                    }
-
-            except Exception:
-                # Try next variant
-                continue
-
-        # All variants failed
-        return None
-
-    def _expand_abbreviations(self, address: str) -> str:
-        """
-        Expand common street abbreviations to full words.
-
-        Args:
-            address: Address with potential abbreviations
-
-        Returns:
-            Address with expanded abbreviations
-        """
-        abbreviations = {
-            " ST ": " STREET ",
-            " AVE ": " AVENUE ",
-            " DR ": " DRIVE ",
-            " RD ": " ROAD ",
-            " CRES ": " CRESCENT ",
-            " PL ": " PLACE ",
-            " TER ": " TERRACE ",
-            " CL ": " CLOSE ",
-            " CTRL ": " CENTRAL ",
-            " PK ": " PARK ",
-            " HTS ": " HEIGHTS ",
-            " GDN ": " GARDEN ",
-            " GDNS ": " GARDENS ",
-            " LOR ": " LORONG ",
-            " JLN ": " JALAN ",
-            " UPP ": " UPPER ",
-            " LWR ": " LOWER ",
-            " NTH ": " NORTH ",
-            " STH ": " SOUTH ",
-            " E ": " EAST ",
-            " W ": " WEST ",
-        }
-
-        expanded = address.upper()
-        for abbr, full in abbreviations.items():
-            expanded = expanded.replace(abbr, full)
-
-        return expanded
 
 
 def ingest_hdb_blocks(

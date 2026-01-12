@@ -1,5 +1,7 @@
 """Database models for ResaleLens application."""
 
+from __future__ import annotations
+
 from datetime import date, datetime
 from enum import Enum as PyEnum
 
@@ -86,7 +88,7 @@ class IngestionRun(Base):
     error_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Relationships
-    transactions: Mapped[list["Transaction"]] = relationship(
+    transactions: Mapped[list[Transaction]] = relationship(
         "Transaction", back_populates="ingestion_run", cascade="all, delete-orphan"
     )
 
@@ -129,8 +131,8 @@ class Transaction(Base):
     )
 
     # Relationships
-    block_ref: Mapped["Block"] = relationship("Block", back_populates="transactions")
-    ingestion_run: Mapped["IngestionRun"] = relationship(
+    block_ref: Mapped[Block] = relationship("Block", back_populates="transactions")
+    ingestion_run: Mapped[IngestionRun] = relationship(
         "IngestionRun", back_populates="transactions"
     )
 
@@ -217,10 +219,10 @@ class Block(Base):
     )
 
     # Relationships
-    transactions: Mapped[list["Transaction"]] = relationship(
+    transactions: Mapped[list[Transaction]] = relationship(
         "Transaction", back_populates="block_ref"
     )
-    nearby_pois: Mapped[list["BlockPOI"]] = relationship(
+    nearby_pois: Mapped[list[BlockPOI]] = relationship(
         "BlockPOI", back_populates="block"
     )
 
@@ -255,7 +257,7 @@ class POI(Base):
     )
 
     # Relationships
-    nearby_blocks: Mapped[list["BlockPOI"]] = relationship(
+    nearby_blocks: Mapped[list[BlockPOI]] = relationship(
         "BlockPOI", back_populates="poi"
     )
 
@@ -323,8 +325,8 @@ class BlockPOI(Base):
     )
 
     # Relationships
-    block: Mapped["Block"] = relationship("Block", back_populates="nearby_pois")
-    poi: Mapped["POI"] = relationship("POI", back_populates="nearby_blocks")
+    block: Mapped[Block] = relationship("Block", back_populates="nearby_pois")
+    poi: Mapped[POI] = relationship("POI", back_populates="nearby_blocks")
 
     # Constraints and Indexes
     __table_args__ = (

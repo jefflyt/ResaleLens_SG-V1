@@ -6,9 +6,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from ..database import SessionLocal
+from ..ingestion.block_pois import ingest_block_pois
 from ..ingestion.hdb_blocks import ingest_hdb_blocks
 from ..ingestion.hdb_property_info import ingest_hdb_property_info
 from ..ingestion.hdb_transactions import ingest_hdb_transactions
+from ..ingestion.pois import ingest_pois
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -25,7 +27,7 @@ def get_db() -> Generator[Session, None, None]:
 @router.post("/ingestion/trigger")
 async def trigger_ingestion(
     dataset: str = Query(
-        "hdb_transactions", description="Dataset to ingest (hdb_transactions or hdb_blocks)"
+        "hdb_transactions", description="Dataset to ingest (hdb_transactions, hdb_blocks, hdb_property_info, pois, or block_pois)"
     ),
     incremental: bool = Query(
         False, description="If True, only fetch new records since last run (for hdb_transactions)"
@@ -72,10 +74,26 @@ async def trigger_ingestion(
                 "dataset": dataset,
                 "summary": summary,
             }
+        elif dataset == "pois":
+            print("Triggering POI ingestion (MRT, LRT, supermarkets, clinics, parks, malls, hawkers, schools)...")
+            summary = ingest_pois(db)
+            return {
+                "status": "success",
+                "dataset": dataset,
+                "summary": summary,
+            }
+        elif dataset == "block_pois":
+            print("Triggering block-POI distance calculation...")
+            summary = ingest_block_pois(db)
+            return {
+                "status": "success",
+                "dataset": dataset,
+                "summary": summary,
+            }
         else:
             raise HTTPException(
                 status_code=400,
-                detail=f"Invalid dataset: {dataset}. Must be 'hdb_transactions', 'hdb_blocks', or 'hdb_property_info'",
+                detail=f"Invalid dataset: {dataset}. Must be 'hdb_transactions', 'hdb_blocks', 'hdb_property_info', 'pois', or 'block_pois'",
             )
 
     except ValueError as e:

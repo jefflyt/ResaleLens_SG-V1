@@ -19,7 +19,7 @@ class TestOneMapClient:
         clear=False,  # Don't clear other env vars
     )
     @patch.dict(os.environ, {"ONEMAP_API_TOKEN": ""}, clear=False)  # Clear token to test email/password flow
-    @patch("resalelens.ingestion.hdb_blocks.fetch_json_with_retry")
+    @patch("resalelens.api.onemap.fetch_json_with_retry")
     def test_get_token(self, mock_fetch: MagicMock) -> None:
         """Test getting OneMap API token via email/password."""
         mock_fetch.return_value = {"access_token": "test-token-123"}
@@ -36,7 +36,7 @@ class TestOneMapClient:
         clear=False,
     )
     @patch.dict(os.environ, {"ONEMAP_API_TOKEN": ""}, clear=False)  # Clear token to test email/password flow
-    @patch("resalelens.ingestion.hdb_blocks.fetch_json_with_retry")
+    @patch("resalelens.api.onemap.fetch_json_with_retry")
     def test_geocode_address_success(self, mock_fetch: MagicMock) -> None:
         """Test successful address geocoding via email/password auth."""
         # Mock token response and geocoding response
@@ -60,7 +60,7 @@ class TestOneMapClient:
         os.environ,
         {"ONEMAP_EMAIL": "test@example.com", "ONEMAP_PASSWORD": "testpass"},
     )
-    @patch("resalelens.ingestion.hdb_blocks.fetch_json_with_retry")
+    @patch("resalelens.api.onemap.fetch_json_with_retry")
     def test_geocode_address_no_results(self, mock_fetch: MagicMock) -> None:
         """Test geocoding with no results."""
         # Mock token response and empty results
