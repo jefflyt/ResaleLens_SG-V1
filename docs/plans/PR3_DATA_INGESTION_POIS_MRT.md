@@ -85,7 +85,11 @@ Implement automated ingestion for MRT/LRT stations and amenity Points of Interes
 ## 4. PR Roadmap
 
 ### PR 3: Data Ingestion Pipeline (POIs & MRT)
-
+**Branch:** `pr3-data-ingestion-pois-mrt`  
+**Status:** ✅ COMPLETE  
+**Created:** 2026-01-09  
+**Completed:** 2026-01-12  
+**Dependencies:** PR1 (Database Schema), PR2 (HDB Data Ingestion), PR0 (Bootstrap)
 **Goal**
 Implement automated monthly ingestion for MRT/LRT stations and amenity POIs (supermarkets, clinics, parks, malls, hawkers) to complete the foundational location-based dataset infrastructure. Enable admin to manually trigger ingestion, and log all runs to the `ingestion_runs` audit table.
 

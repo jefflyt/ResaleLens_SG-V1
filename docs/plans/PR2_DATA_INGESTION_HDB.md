@@ -1,12 +1,14 @@
 # PR2: Data Ingestion Pipeline (HDB Transactions & Blocks)
 
-> **✅ IMPLEMENTATION STATUS: COMPLETE** (2026-01-10)  
+**Branch:** `pr2-data-ingestion-hdb`  
+**Status:** ✅ COMPLETE  
+**Created:** 2026-01-09  
+**Completed:** 2026-01-11  
+**Dependencies:** PR1 (Database Schema), PR0 (Bootstrap)
 > All deliverables implemented, tested, and optimized. 222,835 HDB transactions successfully ingested with bulk upsert optimization (170x faster than initial implementation). See [Verification Report](file:///Users/jefflee/.gemini/antigravity/brain/98f7bb22-b5b2-4a13-8154-dd6a3869e5fe/pr1.2_pr2_verification.md) for details.
 >
 > **Performance:** Bulk upsert with PostgreSQL `INSERT ... ON CONFLICT` reduces database operations from 444K to 223 (1,991x improvement).
 
-**Branch:** `pr2-ingestion-hdb`  
-**Date:** 2026-01-05  
 **Based on:** MASTER_PLAN.md (Phase 1, PR2)
 
 ---
