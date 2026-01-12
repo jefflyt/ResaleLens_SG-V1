@@ -175,6 +175,123 @@ class TransactionRepository(BaseRepository[Transaction]):
         result = self.session.execute(query)
         return list(result.scalars().all())
 
+    def get_transactions_by_block(
+        self, block: str, street: str, flat_type: str, months_back: int
+    ) -> list[Transaction]:
+        """
+        Get transactions for a specific block, flat type, and time window.
+
+        Args:
+            block: Block number
+            street: Street name
+            flat_type: Flat type (e.g., "4 ROOM")
+            months_back: Number of months to look back
+
+        Returns:
+            List of transactions
+        """
+        from datetime import date, timedelta
+
+        cutoff_date = date.today() - timedelta(days=months_back * 30)
+        query = select(Transaction).where(
+            and_(
+                Transaction.block == block,
+                Transaction.street == street,
+                Transaction.flat_type == flat_type,
+                Transaction.date >= cutoff_date,
+            )
+        )
+        result = self.session.execute(query)
+        return list(result.scalars().all())
+
+    def get_transactions_by_radius(
+        self,
+        lat: float,
+        lng: float,
+        radius_m: float,
+        town: str,
+        flat_type: str,
+        months_back: int,
+    ) -> list[Transaction]:
+        """
+        Get transactions within a radius of a point, filtered by town and flat type.
+
+        Uses bounding box pre-filter then Haversine post-filter for accuracy.
+
+        Args:
+            lat: Center point latitude
+            lng: Center point longitude
+            radius_m: Radius in meters
+            town: Town name
+            flat_type: Flat type
+            months_back: Number of months to look back
+
+        Returns:
+            List of transactions within radius
+        """
+        from datetime import date, timedelta
+
+        from ..services.utils import haversine_distance
+
+        cutoff_date = date.today() - timedelta(days=months_back * 30)
+        radius_km = radius_m / 1000.0
+
+        # Bounding box approximation for DB query
+        lat_delta = radius_km / 111.32
+        lon_delta = radius_km / (111.32 * func.cos(func.radians(lat)))
+
+        query = select(Transaction).where(
+            and_(
+                Transaction.town == town,
+                Transaction.flat_type == flat_type,
+                Transaction.date >= cutoff_date,
+                Transaction.latitude.isnot(None),
+                Transaction.longitude.isnot(None),
+                Transaction.latitude.between(lat - lat_delta, lat + lat_delta),
+                Transaction.longitude.between(lng - lon_delta, lng + lon_delta),
+            )
+        )
+        result = self.session.execute(query)
+        candidates = list(result.scalars().all())
+
+        # Post-filter with accurate Haversine distance
+        filtered = []
+        for t in candidates:
+            if t.latitude is not None and t.longitude is not None:
+                dist = haversine_distance(lat, lng, float(t.latitude), float(t.longitude))
+                if dist <= radius_m:
+                    filtered.append(t)
+
+        return filtered
+
+    def get_transactions_by_town(
+        self, town: str, flat_type: str, months_back: int
+    ) -> list[Transaction]:
+        """
+        Get transactions for a town, flat type, and time window.
+
+        Args:
+            town: Town name
+            flat_type: Flat type
+            months_back: Number of months to look back
+
+        Returns:
+            List of transactions
+        """
+        from datetime import date, timedelta
+
+        cutoff_date = date.today() - timedelta(days=months_back * 30)
+        query = select(Transaction).where(
+            and_(
+                Transaction.town == town,
+                Transaction.flat_type == flat_type,
+                Transaction.date >= cutoff_date,
+            )
+        )
+        result = self.session.execute(query)
+        return list(result.scalars().all())
+
+
 
 class BlockRepository(BaseRepository[Block]):
     """Repository for Block model with custom queries."""

@@ -228,17 +228,19 @@ class TestIngestionRunRepository:
 
     def test_get_latest_by_dataset(self, db_session):
         """Test getting latest run by dataset."""
+        from datetime import timezone
+        
         run1 = IngestionRun(
             dataset_name="test",
-            started_at=datetime(2024, 1, 1),
+            started_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
             status=IngestionStatus.SUCCESS,
-            completed_at=datetime(2024, 1, 1),
+            completed_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
         )
         run2 = IngestionRun(
             dataset_name="test",
-            started_at=datetime(2024, 1, 2),
+            started_at=datetime(2024, 1, 2, tzinfo=timezone.utc),
             status=IngestionStatus.SUCCESS,
-            completed_at=datetime(2024, 1, 2),
+            completed_at=datetime(2024, 1, 2, tzinfo=timezone.utc),
         )
         db_session.add_all([run1, run2])
         db_session.commit()
@@ -247,4 +249,4 @@ class TestIngestionRunRepository:
         result = repo.get_latest_by_dataset("test")
 
         assert result is not None
-        assert result.started_at == datetime(2024, 1, 2)
+        assert result.started_at == datetime(2024, 1, 2, tzinfo=timezone.utc)

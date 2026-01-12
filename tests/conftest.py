@@ -7,7 +7,7 @@ from datetime import datetime
 import pytest
 from dotenv import load_dotenv
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, event, text
 from sqlalchemy.orm import Session, sessionmaker
 
 # Load test environment
@@ -35,25 +35,44 @@ engine = create_engine(database_url)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def db_session() -> Generator[Session, None, None]:
     """
-    Create a test database session.
+    Create a test database session with automatic rollback.
     
-    For PostgreSQL (Supabase), uses existing schema.
-    Tests should clean up their own data.
+    Uses nested transactions (SAVEPOINT) to ensure test isolation.
+    Each test runs in its own transaction that gets rolled back after the test.
 
     Yields:
         Session: Test database session
     """
-    # Don't create/drop schema on PostgreSQL - schema already exists from migrations
-    # Tests should clean up their own test data
+    # Create a connection
+    connection = engine.connect()
     
-    db = TestingSessionLocal()
+    # Begin a non-ORM transaction
+    transaction = connection.begin()
+    
+    # Create a session bound to the connection
+    session = TestingSessionLocal(bind=connection)
+    
+    # Begin a nested transaction (uses SAVEPOINT in PostgreSQL)
+    nested = connection.begin_nested()
+    
+    # If the application code calls session.commit(), it will end the nested
+    # transaction but not commit the outer transaction
+    @event.listens_for(session, "after_transaction_end")
+    def end_savepoint(session, transaction):
+        nonlocal nested
+        if not nested.is_active:
+            nested = connection.begin_nested()
+    
     try:
-        yield db
+        yield session
     finally:
-        db.close()
+        session.close()
+        # Roll back the overall transaction, restoring pre-test state
+        transaction.rollback()
+        connection.close()
 
 
 @pytest.fixture
