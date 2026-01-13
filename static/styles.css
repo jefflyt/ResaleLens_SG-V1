@@ -209,21 +209,406 @@ footer {
     .hero h2 {
         font-size: 2rem;
     }
-    
+
     .hero .subtitle {
         font-size: 1.25rem;
     }
-    
+
     .nav-links {
         gap: 1rem;
     }
-    
+
     .cta-section {
         flex-direction: column;
         align-items: center;
     }
-    
+
     .features-grid {
         grid-template-columns: 1fr;
+    }
+}
+
+/* Fair Value Form Styles */
+.fair-value-form {
+    max-width: 800px;
+    margin: 3rem auto;
+    padding: 2.5rem;
+    background-color: var(--bg-light);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-lg);
+}
+
+.fair-value-form h3 {
+    font-size: 1.75rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    color: var(--text-color);
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+    font-size: 0.9rem;
+}
+
+.form-group input,
+.form-group select {
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    font-family: var(--font-sans);
+    transition: border-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.fair-value-form .btn {
+    width: 100%;
+    margin-top: 1rem;
+    padding: 1rem;
+    font-size: 1.125rem;
+}
+
+/* Loading Spinner */
+.loading-spinner {
+    display: none;
+    text-align: center;
+    padding: 2rem;
+}
+
+.loading-spinner.htmx-indicator {
+    display: none;
+}
+
+.loading-spinner.htmx-request {
+    display: block;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    margin: 0 auto 1rem;
+    border: 4px solid var(--border-color);
+    border-top-color: var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Results Section */
+.results-section {
+    max-width: 1000px;
+    margin: 3rem auto;
+    padding: 2rem;
+}
+
+.fair-value-band {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    padding: 2.5rem;
+    border-radius: var(--border-radius);
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow-lg);
+}
+
+.fair-value-band h3 {
+    margin-bottom: 1.5rem;
+    font-size: 1.75rem;
+}
+
+.value-display {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+}
+
+.value-display>div {
+    display: flex;
+    flex-direction: column;
+}
+
+.value-display .label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+    margin-bottom: 0.5rem;
+}
+
+.value-display .value {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.value-display .value.highlight {
+    font-size: 2rem;
+    color: #fbbf24;
+}
+
+/* Confidence Section */
+.confidence-section {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background-color: var(--bg-light);
+    border-radius: var(--border-radius);
+}
+
+.confidence-score .label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    color: var(--text-color);
+}
+
+.confidence-bar {
+    position: relative;
+    height: 40px;
+    background-color: #e5e7eb;
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+.confidence-fill {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: width 0.6s ease;
+    font-weight: 700;
+    color: white;
+}
+
+.confidence-bar.high .confidence-fill {
+    background-color: #10b981;
+}
+
+.confidence-bar.medium .confidence-fill {
+    background-color: #f59e0b;
+}
+
+.confidence-bar.low .confidence-fill {
+    background-color: #ef4444;
+}
+
+.confidence-value {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-weight: 700;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.user-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    font-weight: 700;
+    font-size: 1.125rem;
+    text-align: center;
+}
+
+.user-label.success {
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+.user-label.warning {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.user-label.danger {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+/* Comparables Table */
+.comps-section {
+    margin-bottom: 2rem;
+}
+
+.comps-section h4 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    color: var(--text-color);
+}
+
+.comps-table-container {
+    overflow-x: auto;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+}
+
+.comps-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.comps-table thead {
+    background-color: var(--bg-light);
+}
+
+.comps-table th,
+.comps-table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.comps-table th {
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.comps-table tbody tr:hover {
+    background-color: var(--bg-light);
+}
+
+.comps-table tbody tr:nth-child(even) {
+    background-color: rgba(249, 250, 251, 0.5);
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: var(--text-light);
+}
+
+/* Explainability */
+.explainability-section {
+    margin-bottom: 2rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    background-color: var(--bg-light);
+}
+
+.explainability-section summary {
+    font-weight: 600;
+    font-size: 1.125rem;
+    cursor: pointer;
+    color: var(--primary-color);
+    list-style: none;
+}
+
+.explainability-section summary::-webkit-details-marker {
+    display: none;
+}
+
+.explainability-section summary::before {
+    content: "▶ ";
+    display: inline-block;
+    margin-right: 0.5rem;
+    transition: transform 0.2s;
+}
+
+.explainability-section[open] summary::before {
+    transform: rotate(90deg);
+}
+
+.explainability-content {
+    margin-top: 1.5rem;
+    display: grid;
+    gap: 1.5rem;
+}
+
+.explainability-item h5 {
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
+    color: var(--text-color);
+}
+
+.explainability-item ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+.explainability-item li {
+    padding: 0.5rem 0;
+    color: var(--text-light);
+}
+
+.explainability-item strong {
+    color: var(--text-color);
+}
+
+/* Results Footer */
+.results-footer {
+    text-align: center;
+    padding: 1rem;
+    color: var(--text-light);
+    font-size: 0.9rem;
+}
+
+/* CTA Buttons */
+.cta-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 2rem;
+}
+
+.cta-buttons .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .value-display {
+        grid-template-columns: 1fr;
+    }
+
+    .confidence-section {
+        grid-template-columns: 1fr;
+    }
+
+    .comps-table {
+        font-size: 0.8rem;
+    }
+
+    .comps-table th,
+    .comps-table td {
+        padding: 0.5rem;
+    }
+
+    .cta-buttons {
+        flex-direction: column;
     }
 }

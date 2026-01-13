@@ -1,0 +1,137 @@
+<!-- Fair Value Results Template (loaded via HTMX) -->
+<div class="results-section">
+    <!-- Fair Value Band -->
+    <div class="fair-value-band">
+        <h3>Fair Value Assessment</h3>
+        <div class="value-display">
+            <div class="price-range">
+                <span class="label">Price Range</span>
+                <span class="value">S${{ "{:,.0f}".format(fair_value_low) }} - S${{ "{:,.0f}".format(fair_value_high)
+                    }}</span>
+            </div>
+            <div class="psm-range">
+                <span class="label">Price per sqm</span>
+                <span class="value">S${{ "{:,.2f}".format(fair_value_low / floor_area_sqm) }} - S${{
+                    "{:,.2f}".format(fair_value_high / floor_area_sqm) }}</span>
+            </div>
+            <div class="mid-value">
+                <span class="label">Median Fair Value</span>
+                <span class="value highlight">S${{ "{:,.0f}".format(fair_value_mid) }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confidence Score and User Label -->
+    <div class="confidence-section">
+        <div class="confidence-score">
+            <span class="label">Confidence Score</span>
+            <div
+                class="confidence-bar {% if confidence_score >= 70 %}high{% elif confidence_score >= 50 %}medium{% else %}low{% endif %}">
+                <div class="confidence-fill" style="width: {{ confidence_score }}%"></div>
+                <span class="confidence-value">{{ confidence_score }}%</span>
+            </div>
+        </div>
+
+        {% if user_label %}
+        <div
+            class="user-label {% if 'Fair' in user_label %}success{% elif 'Slightly' in user_label %}warning{% else %}danger{% endif %}">
+            {{ user_label }}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Comparable Transactions -->
+    <div class="comps-section">
+        <h4>Comparable Transactions ({{ comp_count }})</h4>
+        {% if comp_count > 0 %}
+        <div class="comps-table-container">
+            <table class="comps-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Price</th>
+                        <th>Floor Area</th>
+                        <th>Price/sqm</th>
+                        <th>Storey</th>
+                        <th>Model</th>
+                        <th>Distance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for comp in comps[:20] %}
+                    <tr>
+                        <td>{{ comp.date }}</td>
+                        <td>S${{ "{:,.0f}".format(comp.price) }}</td>
+                        <td>{{ "{:.1f}".format(comp.price / comp.psm) }} sqm</td>
+                        <td>S${{ "{:,.2f}".format(comp.psm) }}</td>
+                        <td>{{ comp.storey_range }}</td>
+                        <td>{{ comp.flat_model }}</td>
+                        <td>{{ "{:.0f}".format(comp.distance_m) }}m</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <p>No comparable transactions found. Try widening the time window or adjusting your search criteria.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Explainability -->
+    <details class="explainability-section">
+        <summary>How was this calculated?</summary>
+        <div class="explainability-content">
+            <div class="explainability-item">
+                <h5>Filters Applied</h5>
+                <ul>
+                    <li><strong>Block:</strong> {{ explainability.filters_applied.block }}</li>
+                    <li><strong>Street:</strong> {{ explainability.filters_applied.street }}</li>
+                    <li><strong>Flat Type:</strong> {{ explainability.filters_applied.flat_type }}</li>
+                    <li><strong>Time Window:</strong> {{ explainability.filters_applied.time_window_months }} months
+                    </li>
+                    {% if explainability.filters_applied.get('radius_m') %}
+                    <li><strong>Search Radius:</strong> {{ explainability.filters_applied.radius_m }}m</li>
+                    {% endif %}
+                </ul>
+            </div>
+
+            <div class="explainability-item">
+                <h5>Adjustments Made</h5>
+                <ul>
+                    <li><strong>Storey Adjustment:</strong> {{ explainability.adjustments_made.storey_adjustment }}</li>
+                    <li><strong>Outlier Removal:</strong> {{ explainability.adjustments_made.outlier_removal_method }}
+                    </li>
+                </ul>
+            </div>
+
+            <div class="explainability-item">
+                <h5>Data Quality</h5>
+                <ul>
+                    <li><strong>Search Strategy:</strong> {{ explainability.fallback_used }}</li>
+                    <li><strong>Transactions Found:</strong> {{ explainability.comp_count_before_outliers }}</li>
+                    <li><strong>After Outlier Removal:</strong> {{ explainability.comp_count_after_outliers }}</li>
+                    <li><strong>Price Variance:</strong> {{ "{:.1%}".format(explainability.variance_cv) }}</li>
+                    <li><strong>Median Transaction Age:</strong> {{ explainability.median_comp_age_days }} days</li>
+                </ul>
+            </div>
+        </div>
+    </details>
+
+    <!-- Footer with Last Updated -->
+    <div class="results-footer">
+        {% if last_updated %}
+        <p class="last-updated">Transaction data last updated: {{ last_updated }}</p>
+        {% endif %}
+    </div>
+
+    <!-- Call to Action Buttons -->
+    <div class="cta-buttons">
+        <button class="btn btn-primary"
+            onclick="document.querySelector('form').reset(); document.querySelector('#results-container').innerHTML = '';">Check
+            Another Unit</button>
+        <button class="btn btn-secondary" disabled title="Coming soon in PR6">View Block X-Ray</button>
+        <button class="btn btn-secondary" disabled title="Coming soon in PR7">Add to Shortlist</button>
+    </div>
+</div>
