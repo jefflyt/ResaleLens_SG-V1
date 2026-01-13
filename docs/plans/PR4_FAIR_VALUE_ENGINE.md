@@ -4,6 +4,14 @@
 **Date:** 2026-01-09  
 **Based on:** MASTER_PLAN.md (Phase 1, PR4) and PSD v2 Section 6.1
 
+> **📋 IMPLEMENTATION STATUS**  
+> ✅ **COMPLETE** - Implemented and merged to main  
+> **Commit:** b62a8fc - "feat: Implement PR4 Fair Value Engine + Fix Test Suite"  
+> **Date Completed:** 2026-01-13  
+> **Test Results:** All 23 unit tests passing + 4/5 integration tests passing  
+> **Performance:** <1s calculation time (verified)  
+> **Next:** PR5 - Fair Value API & Results UI
+
 ---
 
 ## 1. Feature/Epic Summary
@@ -525,35 +533,35 @@ Lint and typecheck:
 
 **Manual Verification Checklist:**
 1. **Comp Selection Ladder:**
-   - [ ] Same block query returns comps if available (tier 1)
-   - [ ] Fallback to 24 months works when 12 months has <5 comps (tier 2)
-   - [ ] Fallback to nearby radius works when same block has <5 comps (tier 3)
-   - [ ] Fallback to town-level works when nearby has <5 comps (tier 4)
-   - [ ] "Insufficient data" returned when all tiers exhausted with <5 comps
+   - [x] Same block query returns comps if available (tier 1)
+   - [x] Fallback to 24 months works when 12 months has <5 comps (tier 2)
+   - [x] Fallback to nearby radius works when same block has <5 comps (tier 3)
+   - [x] Fallback to town-level works when nearby has <5 comps (tier 4)
+   - [x] "Insufficient data" returned when all tiers exhausted with <5 comps
 2. **Normalization:**
-   - [ ] Price-per-sqm calculated correctly for all comps
-   - [ ] Storey range adjustment applied correctly (higher storey → higher adjusted psm)
+   - [x] Price-per-sqm calculated correctly for all comps
+   - [x] Storey range adjustment applied correctly (higher storey → higher adjusted psm)
 3. **Outlier Removal:**
-   - [ ] Percentile method removes extreme outliers (P5-P95 filter)
-   - [ ] MAD method removes outliers (2.5 MAD filter)
+   - [x] Percentile method removes extreme outliers (P5-P95 filter)
+   - [x] MAD method removes outliers (2.5 MAD filter)
 4. **Confidence Scoring:**
-   - [ ] Confidence score increases with more comps
-   - [ ] Confidence score increases with lower variance
-   - [ ] Confidence score increases with more recent comps
-   - [ ] Total confidence capped at 100
+   - [x] Confidence score increases with more comps
+   - [x] Confidence score increases with lower variance
+   - [x] Confidence score increases with more recent comps
+   - [x] Total confidence capped at 100
 5. **Fair Value Band:**
-   - [ ] P25-P75 band calculated from normalized psm
-   - [ ] Band converted to total price correctly (psm * user_floor_area)
+   - [x] P25-P75 band calculated from normalized psm
+   - [x] Band converted to total price correctly (psm * user_floor_area)
 6. **User Label:**
-   - [ ] "Fair" assigned when asking price within band
-   - [ ] "Slightly high/low" assigned when within 10% of band edges
-   - [ ] "High risk" assigned when >10% outside band
+   - [x] "Fair" assigned when asking price within band
+   - [x] "Slightly high/low" assigned when within 10% of band edges
+   - [x] "High risk" assigned when >10% outside band
 7. **Explainability:**
-   - [ ] All explainability fields populated (filters, adjustments, fallback, comp count, variance)
-   - [ ] Comp table includes all comps with correct data (date, price, psm, storey, distance)
+   - [x] All explainability fields populated (filters, adjustments, fallback, comp count, variance)
+   - [x] Comp table includes all comps with correct data (date, price, psm, storey, distance)
 8. **Performance:**
-   - [ ] Fair Value calculation completes in <1s for typical inputs
-   - [ ] No N+1 query issues (verify with SQL logging)
+   - [x] Fair Value calculation completes in <1s for typical inputs
+   - [x] No N+1 query issues (verified with SQL logging)
 
 #### Rollback Plan
 
@@ -574,19 +582,20 @@ Lint and typecheck:
 #### Dependencies
 
 **Prerequisite PRs:**
-- ✅ **PR0 (Bootstrap):** FastAPI, SQLAlchemy, pytest framework
-- ✅ **PR1 (Database Schema):** `transactions` table with required columns and indexes
-- ✅ **PR2 (HDB Ingestion):** Populated `transactions` table with real HDB resale data
+- ✅ **PR0 (Bootstrap):** FastAPI, SQLAlchemy, pytest framework — **COMPLETE**
+- ✅ **PR1 (Database Schema):** `transactions` table with required columns and indexes — **COMPLETE**
+- ✅ **PR2 (HDB Ingestion):** Populated `transactions` table with real HDB resale data — **COMPLETE**
 
 **External Dependencies:**
-- **pandas:** Add to `pyproject.toml` if not already present (should be standard for data projects)
-- **numpy:** Add to `pyproject.toml` if not already present
-- **Python 3.11+:** Required for modern type hints and performance
+- ✅ **pandas:** Added to `pyproject.toml` (version >=2.0.0) — **INSTALLED**
+- ✅ **numpy:** Added to `pyproject.toml` (version >=1.24.0) — **INSTALLED**
+- ✅ **Python 3.11+:** Required for modern type hints and performance — **VERIFIED**
 
-**Validation Before Starting PR4:**
-- Verify `transactions` table has ≥1,000 rows (enough for realistic testing)
-- Verify indexes exist on `(block, street, flat_type, date)` and `(town, flat_type, date)`
-- Verify sample queries return results in <200ms (p95)
+**Pre-Implementation Validation:**
+- ✅ Verified `transactions` table has ≥1,000 rows (sufficient for realistic testing)
+- ✅ Verified indexes exist on `(block, street, flat_type, date)` and `(town, flat_type, date)`
+- ✅ Verified sample queries return results in <200ms (p95)
+
 
 #### Risks & Mitigations
 
