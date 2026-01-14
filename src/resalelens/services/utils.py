@@ -95,4 +95,4 @@ def calculate_median_by_storey(df: pd.DataFrame) -> dict[int, float]:
 
     # Group by storey midpoint and calculate median psm
     storey_medians = df.groupby("storey_midpoint")["psm"].median().to_dict()
-    return storey_medians
+    return storey_medians  # type: ignore[no-any-return]

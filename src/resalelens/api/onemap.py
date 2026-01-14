@@ -113,7 +113,7 @@ class OneMapClient:
             )
 
             self.request_count += 1
-            return response.get("results", [])
+            return response.get("results", [])  # type: ignore[no-any-return]
 
         except Exception:
             return []

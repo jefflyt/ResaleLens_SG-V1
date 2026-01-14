@@ -78,7 +78,7 @@ def ingest_pois(session: Session) -> dict[str, int]:
         for category in categories:
             query = category["query"]
             poi_type = category["type"]
-            print(f"Searching for {query} ({poi_type.value})...")
+            print(f"Searching for {query} ({poi_type})...")
 
             page = 1
             total_category_found = 0

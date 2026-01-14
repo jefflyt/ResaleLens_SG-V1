@@ -8,6 +8,9 @@ from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 from .config import settings
 
 # Create SQLAlchemy engine
+# Type guard: settings.database_url is validated in config.py to never be None
+assert settings.database_url is not None, "DATABASE_URL must be set"
+
 engine = create_engine(
     settings.database_url,
     connect_args={"check_same_thread": False} if "sqlite" in settings.database_url else {},

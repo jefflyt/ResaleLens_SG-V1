@@ -82,12 +82,12 @@ def select_comps(request: FairValueRequest, db: Session) -> tuple[list[Transacti
 
     # Tier 4: Town-level
     # Get town from block or fallback to querying a transaction
-    town = block.town if block else None
+    town = block.town if block else None  # type: ignore[assignment]
     if not town:
         # Fallback: try to get town from any transaction for this block
         sample_txns = repo.get_transactions_by_block(request.block, request.street, "", 60)
         if sample_txns:
-            town = sample_txns[0].town
+            town = sample_txns[0].town  # type: ignore[assignment]
 
     if town:
         # Try with request time window first
@@ -184,8 +184,8 @@ def normalize_comps(
                     comp_baseline = storey_medians[comp_storey]
                     if comp_baseline > 0:
                         adjustment_factor = user_baseline / comp_baseline
-                        return comp_psm * adjustment_factor
-                return comp_psm
+                        return comp_psm * adjustment_factor  # type: ignore[no-any-return]
+                return comp_psm  # type: ignore[no-any-return]
 
             df["adjusted_psm"] = df.apply(adjust_for_storey, axis=1)
         else:

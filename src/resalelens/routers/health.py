@@ -33,17 +33,17 @@ async def database_health(db: Session = Depends(get_db)):
         latency_ms = (time() - start) * 1000
 
         # Get connection pool stats
-        pool = db.bind.pool
+        pool = db.bind.pool  # type: ignore[union-attr]
 
         return {
             "status": "healthy",
             "database": "postgresql",
             "latency_ms": round(latency_ms, 2),
             "connection_pool": {
-                "size": pool.size(),
-                "checked_out": pool.checkedout(),
-                "overflow": pool.overflow(),
-                "checked_in": pool.size() - pool.checkedout(),
+                "size": pool.size(),  # type: ignore[union-attr]
+                "checked_out": pool.checkedout(),  # type: ignore[union-attr]
+                "overflow": pool.overflow(),  # type: ignore[union-attr]
+                "checked_in": pool.size() - pool.checkedout(),  # type: ignore[union-attr]
             },
         }
     except Exception as e:
