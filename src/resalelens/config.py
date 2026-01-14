@@ -28,7 +28,9 @@ class Settings:
             print("   2. Set DATABASE_URL to your Supabase connection string")
             print("   3. See docs/technical/supabase_setup.md for help")
             print("\nExample:")
-            print("   DATABASE_URL=postgresql://postgres.[ref]:[password]@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres\n")
+            print(
+                "   DATABASE_URL=postgresql://postgres.[ref]:[password]@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres\n"
+            )
             sys.exit(1)
 
         # Validate it's a PostgreSQL URL
@@ -36,7 +38,9 @@ class Settings:
             print("\n❌ ERROR: DATABASE_URL must be a PostgreSQL connection string")
             print(f"   Got: {self.database_url[:50]}...")
             print("\n📝 Expected format:")
-            print("   postgresql://postgres.[ref]:[password]@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres")
+            print(
+                "   postgresql://postgres.[ref]:[password]@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres"
+            )
             print("\n   See docs/technical/supabase_setup.md for setup guide\n")
             sys.exit(1)
 

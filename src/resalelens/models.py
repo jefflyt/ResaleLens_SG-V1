@@ -222,9 +222,7 @@ class Block(Base):
     transactions: Mapped[list[Transaction]] = relationship(
         "Transaction", back_populates="block_ref"
     )
-    nearby_pois: Mapped[list[BlockPOI]] = relationship(
-        "BlockPOI", back_populates="block"
-    )
+    nearby_pois: Mapped[list[BlockPOI]] = relationship("BlockPOI", back_populates="block")
 
     # Constraints and Indexes
     __table_args__ = (
@@ -257,9 +255,7 @@ class POI(Base):
     )
 
     # Relationships
-    nearby_blocks: Mapped[list[BlockPOI]] = relationship(
-        "BlockPOI", back_populates="poi"
-    )
+    nearby_blocks: Mapped[list[BlockPOI]] = relationship("BlockPOI", back_populates="poi")
 
     # Indexes
     __table_args__ = (

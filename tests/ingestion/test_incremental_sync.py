@@ -16,7 +16,13 @@ class TestIncrementalSync:
         # Create dependencies first
         from resalelens.models import Block
 
-        run = IngestionRun(id=1, dataset_name="hdb_transactions", started_at=datetime.utcnow(), status=IngestionStatus.SUCCESS, rows_processed=0)
+        run = IngestionRun(
+            id=1,
+            dataset_name="hdb_transactions",
+            started_at=datetime.utcnow(),
+            status=IngestionStatus.SUCCESS,
+            rows_processed=0,
+        )
         db_session.add(run)
         block = Block(block="123", street="Test Street", town="Test Town")
         db_session.add(block)
@@ -129,7 +135,13 @@ class TestIncrementalSync:
         # Create dependencies first
         from resalelens.models import Block
 
-        run = IngestionRun(id=1, dataset_name="hdb_transactions", started_at=datetime.utcnow(), status=IngestionStatus.SUCCESS, rows_processed=0)
+        run = IngestionRun(
+            id=1,
+            dataset_name="hdb_transactions",
+            started_at=datetime.utcnow(),
+            status=IngestionStatus.SUCCESS,
+            rows_processed=0,
+        )
         db_session.add(run)
         block = Block(block="123", street="Test Street", town="Test Town")
         db_session.add(block)

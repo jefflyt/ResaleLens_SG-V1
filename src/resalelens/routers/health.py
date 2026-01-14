@@ -44,12 +44,8 @@ async def database_health(db: Session = Depends(get_db)):
                 "checked_out": pool.checkedout(),
                 "overflow": pool.overflow(),
                 "checked_in": pool.size() - pool.checkedout(),
-            }
+            },
         }
     except Exception as e:
         latency_ms = (time() - start) * 1000
-        return {
-            "status": "unhealthy",
-            "error": str(e),
-            "latency_ms": round(latency_ms, 2)
-        }
+        return {"status": "unhealthy", "error": str(e), "latency_ms": round(latency_ms, 2)}

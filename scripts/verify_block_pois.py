@@ -70,7 +70,9 @@ def verify_block_pois():
         ).scalar()
 
         orphaned_blocks = total_blocks - blocks_with_pois_count
-        print(f"Blocks coverage: {blocks_with_pois_count}/{total_blocks} ({blocks_with_pois_count/total_blocks*100:.1f}%)")
+        print(
+            f"Blocks coverage: {blocks_with_pois_count}/{total_blocks} ({blocks_with_pois_count / total_blocks * 100:.1f}%)"
+        )
         print(f"Orphaned blocks (0 POIs within 2km): {orphaned_blocks}")
 
         # 2. POI Distribution per Block
@@ -97,7 +99,9 @@ def verify_block_pois():
         missing_types = set(all_poi_types) - set(linked_types)
 
         if missing_types:
-            print(f"\nWARNING: The following POI types exist but have NO links to any block: {missing_types}")
+            print(
+                f"\nWARNING: The following POI types exist but have NO links to any block: {missing_types}"
+            )
         else:
             print("\nAll existing POI types have at least one link.")
 
@@ -106,8 +110,7 @@ def verify_block_pois():
 
         # Check for missing coordinates globally (Fast check)
         missing_coords_count = session.execute(
-            select(func.count(Block.id))
-            .where((Block.latitude is None) | (Block.longitude is None))
+            select(func.count(Block.id)).where((Block.latitude is None) | (Block.longitude is None))
         ).scalar()
 
         print(f"Total Blocks with MISSING coordinates: {missing_coords_count}")
@@ -124,9 +127,9 @@ def verify_block_pois():
                 ).all()
 
                 # Fetch all covered block IDs
-                covered_ids = set(session.execute(
-                    select(func.distinct(BlockPOI.block_id))
-                ).scalars().all())
+                covered_ids = set(
+                    session.execute(select(func.distinct(BlockPOI.block_id))).scalars().all()
+                )
 
                 # Identify orphans
                 orphan_towns = {}
@@ -161,12 +164,9 @@ def verify_block_pois():
         for p_type, count in poi_counts:
             print(f"  {p_type.value}: {count}")
 
-
-
-
-
     finally:
         session.close()
+
 
 if __name__ == "__main__":
     verify_block_pois()

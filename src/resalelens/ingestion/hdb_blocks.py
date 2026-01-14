@@ -16,7 +16,6 @@ from .utils import log_ingestion_run, normalize_street_name
 # OneMapClient class moved to src/resalelens/api/onemap.py
 
 
-
 def ingest_hdb_blocks(
     session: Session, batch_size: int | None = None, skip_existing: bool = True
 ) -> dict[str, int]:
@@ -63,7 +62,12 @@ def ingest_hdb_blocks(
                 Transaction.town,
                 Transaction.lease_commence_date,
             )
-            .group_by(Transaction.block, Transaction.street, Transaction.town, Transaction.lease_commence_date)
+            .group_by(
+                Transaction.block,
+                Transaction.street,
+                Transaction.town,
+                Transaction.lease_commence_date,
+            )
             .all()
         )
         summary["total_blocks"] = len(unique_blocks)
@@ -88,7 +92,9 @@ def ingest_hdb_blocks(
 
                 # Rate limiting: respect OneMap API limits
                 if processed_count > 0 and processed_count % 100 == 0:
-                    print(f"Processed {processed_count}/{len(unique_blocks)} blocks. Pausing for rate limit...")
+                    print(
+                        f"Processed {processed_count}/{len(unique_blocks)} blocks. Pausing for rate limit..."
+                    )
                     time.sleep(2)  # 2-second pause every 100 requests
 
                 # Geocode address

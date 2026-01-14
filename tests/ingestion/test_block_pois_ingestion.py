@@ -7,7 +7,6 @@ from resalelens.ingestion.block_pois import calculate_haversine_distance, ingest
 
 
 class TestBlockPOSIngestion(unittest.TestCase):
-
     def test_calculate_haversine_distance(self):
         # Known distance: Singapore (1.3521, 103.8198) to JB (1.4927, 103.7414)
         # Approx 17-18km
@@ -100,6 +99,7 @@ class TestBlockPOSIngestion(unittest.TestCase):
         self.assertEqual(distances_arg[0]["poi_id"], 101)
         # 0.01 deg lon at equator is approx 1113.2 meters
         self.assertTrue(1000 < distances_arg[0]["distance_m"] < 1200)
+
 
 if __name__ == "__main__":
     unittest.main()

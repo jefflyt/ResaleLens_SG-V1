@@ -95,10 +95,10 @@ async def calculate_fair_value_api(
         # This allows users to enter addresses with abbreviations, lowercase, extra spaces, etc.
         block_input = form_data.get("block", "")
         street_input = form_data.get("street", "")
-        
+
         # Normalize block: uppercase and strip whitespace
         normalized_block = block_input.upper().strip() if block_input else ""
-        
+
         # Normalize street: expand abbreviations, uppercase, strip whitespace
         normalized_street = normalize_street_name(street_input) if street_input else ""
 

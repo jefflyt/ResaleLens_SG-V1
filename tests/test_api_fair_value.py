@@ -3,7 +3,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from resalelens.models import Block, IngestionRun, IngestionStatus, Transaction
+from resalelens.models import Block, Transaction
 
 
 class TestFairValueAPI:
@@ -26,6 +26,7 @@ class TestFairValueAPI:
 
         # Create transactions with normalized street name
         from datetime import date, timedelta
+
         transactions = []
         base_date = date.today() - timedelta(days=60)
 
@@ -309,5 +310,3 @@ class TestFairValueAPI:
         assert response.status_code == 200
         assert "text/html" in response.headers["content-type"]
         assert "Fair Value Assessment" in response.text
-
-

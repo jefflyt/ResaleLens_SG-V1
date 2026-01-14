@@ -18,7 +18,9 @@ class TestOneMapClient:
         {"ONEMAP_EMAIL": "test@example.com", "ONEMAP_PASSWORD": "testpass"},
         clear=False,  # Don't clear other env vars
     )
-    @patch.dict(os.environ, {"ONEMAP_API_TOKEN": ""}, clear=False)  # Clear token to test email/password flow
+    @patch.dict(
+        os.environ, {"ONEMAP_API_TOKEN": ""}, clear=False
+    )  # Clear token to test email/password flow
     @patch("resalelens.api.onemap.fetch_json_with_retry")
     def test_get_token(self, mock_fetch: MagicMock) -> None:
         """Test getting OneMap API token via email/password."""
@@ -35,7 +37,9 @@ class TestOneMapClient:
         {"ONEMAP_EMAIL": "test@example.com", "ONEMAP_PASSWORD": "testpass"},
         clear=False,
     )
-    @patch.dict(os.environ, {"ONEMAP_API_TOKEN": ""}, clear=False)  # Clear token to test email/password flow
+    @patch.dict(
+        os.environ, {"ONEMAP_API_TOKEN": ""}, clear=False
+    )  # Clear token to test email/password flow
     @patch("resalelens.api.onemap.fetch_json_with_retry")
     def test_geocode_address_success(self, mock_fetch: MagicMock) -> None:
         """Test successful address geocoding via email/password auth."""
@@ -90,7 +94,7 @@ class TestHDBBlocksIngestion:
         """Test successful ingestion of blocks."""
         # Count existing blocks before test
         initial_block_count = db_session.query(Block).count()
-        
+
         # Create sample transactions to extract blocks from
         run = IngestionRun(
             dataset_name="hdb_transactions",
@@ -147,28 +151,31 @@ class TestHDBBlocksIngestion:
         assert summary["geocoding_failed"] == 0
 
         # Verify test blocks were inserted or updated
-        test_blocks = db_session.query(Block).filter(
-            Block.block.in_(["TEST123", "TEST456"])
-        ).order_by(Block.block).all()  # Order by block number for consistent results
+        test_blocks = (
+            db_session.query(Block)
+            .filter(Block.block.in_(["TEST123", "TEST456"]))
+            .order_by(Block.block)
+            .all()
+        )  # Order by block number for consistent results
         assert len(test_blocks) == 2
-        
+
         # Both blocks should have coordinates (order doesn't matter)
         block1 = test_blocks[0]  # TEST123
         block2 = test_blocks[1]  # TEST456
-        
+
         assert block1.block == "TEST123"
         assert block2.block == "TEST456"
-        
+
         # Both blocks should have geocoded coordinates
         assert block1.latitude is not None
         assert block1.longitude is not None
         assert block2.latitude is not None
         assert block2.longitude is not None
-        
+
         # Coordinates should be from the mocked results (either order)
         latitudes = {float(block1.latitude), float(block2.latitude)}
         assert latitudes == {1.3521, 1.3525}
-        
+
         # Clean up test data to avoid polluting database
         db_session.query(Transaction).filter(Transaction.block.in_(["TEST123", "TEST456"])).delete()
         db_session.query(Block).filter(Block.block.in_(["TEST123", "TEST456"])).delete()
@@ -229,7 +236,7 @@ class TestHDBBlocksIngestion:
         assert block.block == "TESTFAIL123"
         assert block.latitude is None
         assert block.longitude is None
-        
+
         # Clean up test data
         db_session.query(Transaction).filter(Transaction.block == "TESTFAIL123").delete()
         db_session.query(Block).filter(Block.block == "TESTFAIL123").delete()

@@ -3,9 +3,7 @@
 import math
 
 
-def calculate_haversine_distance(
-    lat1: float, lng1: float, lat2: float, lng2: float
-) -> float:
+def calculate_haversine_distance(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
     """
     Calculate distance between two points using Haversine formula.
 
@@ -44,10 +42,7 @@ def calculate_haversine_distance(
     dlng = math.radians(lng2 - lng1)
 
     # Haversine formula
-    a = (
-        math.sin(dlat / 2) ** 2
-        + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlng / 2) ** 2
-    )
+    a = math.sin(dlat / 2) ** 2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlng / 2) ** 2
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
     distance_m = EARTH_RADIUS_M * c

@@ -12,9 +12,7 @@ from ..models import POI, Block
 from .utils import log_ingestion_run
 
 
-def calculate_haversine_distance(
-    lat1: float, lon1: float, lat2: float, lon2: float
-) -> float:
+def calculate_haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     """
     Calculate the great circle distance between two points on the earth.
 
@@ -80,12 +78,7 @@ def ingest_block_pois(
         ).all()
 
         poi_data = [
-            {
-                "id": p.id,
-                "lat": float(p.latitude),
-                "lon": float(p.longitude),
-                "name": p.name
-            }
+            {"id": p.id, "lat": float(p.latitude), "lon": float(p.longitude), "name": p.name}
             for p in pois
         ]
         print(f"Loaded {len(poi_data)} POIs into memory.")
@@ -135,17 +128,12 @@ def ingest_block_pois(
                     continue
 
                 # Precise distance check
-                dist = calculate_haversine_distance(
-                    block_lat, block_lon, poi["lat"], poi["lon"]
-                )
+                dist = calculate_haversine_distance(block_lat, block_lon, poi["lat"], poi["lon"])
 
                 summary["distances_calculated"] += 1
 
                 if dist <= max_distance_m:
-                    block_distances.append({
-                        "poi_id": poi["id"],
-                        "distance_m": dist
-                    })
+                    block_distances.append({"poi_id": poi["id"], "distance_m": dist})
 
             # Upsert if we found any POIs
             if block_distances:

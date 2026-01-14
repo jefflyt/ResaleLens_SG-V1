@@ -5,7 +5,6 @@ table and creates corresponding block records. This is a prerequisite for adding
 the block_id foreign key to transactions.
 """
 
-
 from resalelens.database import SessionLocal
 from resalelens.models import Block, Transaction
 
@@ -35,9 +34,7 @@ def populate_blocks_from_transactions():
         for block_num, street, town in unique_blocks:
             # Check if block already exists
             existing_block = (
-                db.query(Block)
-                .filter(Block.block == block_num, Block.street == street)
-                .first()
+                db.query(Block).filter(Block.block == block_num, Block.street == street).first()
             )
 
             if existing_block:

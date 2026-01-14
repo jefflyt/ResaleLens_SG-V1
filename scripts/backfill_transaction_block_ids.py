@@ -50,7 +50,7 @@ def backfill_transaction_block_ids():
         print(f"   Total transactions: {total:,}")
         print(f"   Matched (with block_id): {matched:,}")
         print(f"   Unmatched (block_id IS NULL): {unmatched_after:,}")
-        print(f"   Match rate: {(matched/total*100):.2f}%")
+        print(f"   Match rate: {(matched / total * 100):.2f}%")
 
         if unmatched_after > 0:
             print(f"\n⚠️  WARNING: {unmatched_after} transactions could not be matched!")
@@ -74,7 +74,7 @@ def backfill_transaction_block_ids():
             "total": total,
             "matched": matched,
             "unmatched": unmatched_after,
-            "match_rate": (matched/total*100) if total > 0 else 0
+            "match_rate": (matched / total * 100) if total > 0 else 0,
         }
 
     except Exception as e:

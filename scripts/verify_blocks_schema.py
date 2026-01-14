@@ -8,7 +8,8 @@ import sys
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, inspect
 
-load_dotenv('.env.local')
+load_dotenv(".env.local")
+
 
 def check_blocks_schema():
     """Check if HDB property info columns exist in blocks table."""
@@ -24,17 +25,38 @@ def check_blocks_schema():
 
     # Get all columns in blocks table
     try:
-        columns = inspector.get_columns('blocks')
-        column_names = [col['name'] for col in columns]
+        columns = inspector.get_columns("blocks")
+        column_names = [col["name"] for col in columns]
 
         print(f"\n✅ Connected! Found {len(column_names)} columns in blocks table\n")
 
         # Check for HDB property information fields
         expected_fields = {
-            'Building Characteristics': ['max_floor_lvl', 'year_completed', 'total_dwelling_units'],
-            'Facility Flags': ['residential', 'commercial', 'market_hawker', 'multistorey_carpark', 'precinct_pavilion', 'miscellaneous'],
-            'Unit Mix (Sold)': ['1room_sold', '2room_sold', '3room_sold', '4room_sold', '5room_sold', 'exec_sold', 'multigen_sold', 'studio_apartment_sold'],
-            'Unit Mix (Rental)': ['1room_rental', '2room_rental', '3room_rental', 'other_room_rental'],
+            "Building Characteristics": ["max_floor_lvl", "year_completed", "total_dwelling_units"],
+            "Facility Flags": [
+                "residential",
+                "commercial",
+                "market_hawker",
+                "multistorey_carpark",
+                "precinct_pavilion",
+                "miscellaneous",
+            ],
+            "Unit Mix (Sold)": [
+                "1room_sold",
+                "2room_sold",
+                "3room_sold",
+                "4room_sold",
+                "5room_sold",
+                "exec_sold",
+                "multigen_sold",
+                "studio_apartment_sold",
+            ],
+            "Unit Mix (Rental)": [
+                "1room_rental",
+                "2room_rental",
+                "3room_rental",
+                "other_room_rental",
+            ],
         }
 
         all_exist = True
@@ -68,6 +90,7 @@ def check_blocks_schema():
     except Exception as e:
         print(f"❌ ERROR: {e}")
         return False
+
 
 if __name__ == "__main__":
     success = check_blocks_schema()

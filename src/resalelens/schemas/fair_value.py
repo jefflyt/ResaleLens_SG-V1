@@ -24,7 +24,15 @@ class FairValueRequest(BaseModel):
     @classmethod
     def validate_flat_type(cls, v: str) -> str:
         """Validate flat type is in expected format."""
-        valid_types = {"1 ROOM", "2 ROOM", "3 ROOM", "4 ROOM", "5 ROOM", "EXECUTIVE", "MULTI-GENERATION"}
+        valid_types = {
+            "1 ROOM",
+            "2 ROOM",
+            "3 ROOM",
+            "4 ROOM",
+            "5 ROOM",
+            "EXECUTIVE",
+            "MULTI-GENERATION",
+        }
         v_upper = v.upper()
         if v_upper not in valid_types:
             raise ValueError(f"Invalid flat_type. Must be one of: {valid_types}")
@@ -42,7 +50,6 @@ class Comp(BaseModel):
     storey_range: str = Field(..., description="Storey range")
     distance_m: float = Field(..., description="Distance from target block in meters")
     flat_model: str = Field(..., description="HDB flat model")
-
 
 
 class Explainability(BaseModel):

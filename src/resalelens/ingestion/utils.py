@@ -64,9 +64,7 @@ def retry_on_failure(
 
 
 @contextmanager
-def log_ingestion_run(
-    session: Session, dataset_name: str
-) -> Generator[IngestionRun, None, None]:
+def log_ingestion_run(session: Session, dataset_name: str) -> Generator[IngestionRun, None, None]:
     """
     Context manager for logging ingestion runs.
 

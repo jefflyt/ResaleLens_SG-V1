@@ -4,7 +4,7 @@ from datetime import date, timedelta
 
 import pytest
 
-from resalelens.models import Block, IngestionRun, IngestionStatus, Transaction
+from resalelens.models import Block, Transaction
 from resalelens.schemas.fair_value import FairValueRequest
 from resalelens.services.fair_value import calculate_fair_value
 

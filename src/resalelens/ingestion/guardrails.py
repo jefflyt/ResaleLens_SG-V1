@@ -112,9 +112,15 @@ class IngestionGuardrails:
         # Log state after
         state_after = IngestionGuardrails.check_database_state(db)
         print("\n📊 Database state after ingestion:")
-        print(f"   Transactions: {state_after['transactions']:,} (+{state_after['transactions'] - state_before['transactions']:,})")
-        print(f"   Blocks: {state_after['blocks']:,} (+{state_after['blocks'] - state_before['blocks']:,})")
-        print(f"   Ingestion runs: {state_after['ingestion_runs']:,} (+{state_after['ingestion_runs'] - state_before['ingestion_runs']:,})")
+        print(
+            f"   Transactions: {state_after['transactions']:,} (+{state_after['transactions'] - state_before['transactions']:,})"
+        )
+        print(
+            f"   Blocks: {state_after['blocks']:,} (+{state_after['blocks'] - state_before['blocks']:,})"
+        )
+        print(
+            f"   Ingestion runs: {state_after['ingestion_runs']:,} (+{state_after['ingestion_runs'] - state_before['ingestion_runs']:,})"
+        )
 
         # Return with proper typing
         return dict(result)  # type: ignore[return-value]

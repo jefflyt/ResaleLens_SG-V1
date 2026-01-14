@@ -42,11 +42,9 @@ def ingest_pois(session: Session) -> dict[str, int]:
         # Transport
         {"query": "MRT STATION", "type": POIType.MRT},
         {"query": "LRT STATION", "type": POIType.LRT},
-
         # Education
         {"query": "PRIMARY SCHOOL", "type": POIType.SCHOOL},
         {"query": "SECONDARY SCHOOL", "type": POIType.SCHOOL},
-
         # Supermarkets - Major chains
         {"query": "NTUC", "type": POIType.SUPERMARKET},
         {"query": "FAIRPRICE", "type": POIType.SUPERMARKET},
@@ -57,22 +55,18 @@ def ingest_pois(session: Session) -> dict[str, int]:
         {"query": "DON DON DONKI", "type": POIType.SUPERMARKET},
         {"query": "U STARS", "type": POIType.SUPERMARKET},
         {"query": "MARKETPLACE", "type": POIType.SUPERMARKET},
-
         # Hawker Centres & Food Courts
         {"query": "HAWKER CENTRE", "type": POIType.HAWKER},
         {"query": "FOOD CENTRE", "type": POIType.HAWKER},
         {"query": "MARKET AND FOOD CENTRE", "type": POIType.HAWKER},
         {"query": "MARKET & FOOD CENTRE", "type": POIType.HAWKER},
-
         # Shopping Malls - Broader terms
         {"query": "SHOPPING CENTRE", "type": POIType.MALL},
         {"query": "PLAZA", "type": POIType.MALL},
         {"query": "MALL", "type": POIType.MALL},
-
         # Clinics
         {"query": "CLINIC", "type": POIType.CLINIC},
         {"query": "POLYCLINIC", "type": POIType.CLINIC},
-
         # Parks - Specific to avoid noise
         {"query": "PARK CONNECTOR", "type": POIType.PARK},
         {"query": "NEIGHBOURHOOD PARK", "type": POIType.PARK},
@@ -114,10 +108,11 @@ def ingest_pois(session: Session) -> dict[str, int]:
                             continue
 
                         # Check for existence
-                        existing = session.query(POI).filter(
-                            POI.name == name,
-                            POI.poi_type == poi_type
-                        ).first()
+                        existing = (
+                            session.query(POI)
+                            .filter(POI.name == name, POI.poi_type == poi_type)
+                            .first()
+                        )
 
                         if existing:
                             summary["duplicates"] += 1
@@ -149,7 +144,6 @@ def ingest_pois(session: Session) -> dict[str, int]:
                     break
 
             print(f"Category complete: Found {total_category_found} total for {query}")
-
 
         run.rows_processed = summary["inserted"]
         print(f"POI Ingestion Complete: {summary}")

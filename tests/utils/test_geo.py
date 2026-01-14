@@ -1,6 +1,5 @@
 """Tests for geospatial utilities."""
 
-
 from resalelens.utils.geo import calculate_haversine_distance
 
 
@@ -69,4 +68,4 @@ class TestHaversineDistance:
         dist = calculate_haversine_distance(1.1, 103.6, 1.5, 104.0)
 
         # Should be less than 65km (actual diagonal is ~63km)
-        assert dist < 65000, f"Distance across Singapore should be <65km, got {dist/1000:.1f}km"
+        assert dist < 65000, f"Distance across Singapore should be <65km, got {dist / 1000:.1f}km"

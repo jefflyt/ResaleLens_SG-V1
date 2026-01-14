@@ -27,7 +27,8 @@ def get_db() -> Generator[Session, None, None]:
 @router.post("/ingestion/trigger")
 async def trigger_ingestion(
     dataset: str = Query(
-        "hdb_transactions", description="Dataset to ingest (hdb_transactions, hdb_blocks, hdb_property_info, pois, or block_pois)"
+        "hdb_transactions",
+        description="Dataset to ingest (hdb_transactions, hdb_blocks, hdb_property_info, pois, or block_pois)",
     ),
     incremental: bool = Query(
         False, description="If True, only fetch new records since last run (for hdb_transactions)"
@@ -75,7 +76,9 @@ async def trigger_ingestion(
                 "summary": summary,
             }
         elif dataset == "pois":
-            print("Triggering POI ingestion (MRT, LRT, supermarkets, clinics, parks, malls, hawkers, schools)...")
+            print(
+                "Triggering POI ingestion (MRT, LRT, supermarkets, clinics, parks, malls, hawkers, schools)..."
+            )
             summary = ingest_pois(db)
             return {
                 "status": "success",

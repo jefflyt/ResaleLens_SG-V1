@@ -5,6 +5,7 @@ Revises: 7eb00197f47f
 Create Date: 2026-01-11 12:47:23.049043+00:00
 
 """
+
 from collections.abc import Sequence
 
 import sqlalchemy as sa
@@ -12,8 +13,8 @@ from alembic import op
 from sqlalchemy import text
 
 # revision identifiers, used by Alembic.
-revision: str = 'a78bd617eecc'
-down_revision: str | None = '7eb00197f47f'
+revision: str = "a78bd617eecc"
+down_revision: str | None = "7eb00197f47f"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
@@ -26,22 +27,27 @@ def upgrade() -> None:
 
     # Create block_pois table
     op.create_table(
-        'block_pois',
-        sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('block_id', sa.Integer(), nullable=False),
-        sa.Column('poi_id', sa.Integer(), nullable=False),
-        sa.Column('distance_m', sa.Numeric(precision=10, scale=2), nullable=False),
-        sa.Column('created_at', sa.DateTime(timezone=True), nullable=False, server_default=sa.text('now()')),
-        sa.ForeignKeyConstraint(['block_id'], ['blocks.id'], name='fk_block_pois_block_id'),
-        sa.ForeignKeyConstraint(['poi_id'], ['pois.id'], name='fk_block_pois_poi_id'),
-        sa.PrimaryKeyConstraint('id'),
-        sa.UniqueConstraint('block_id', 'poi_id', name='uq_block_poi'),
-        sa.CheckConstraint('distance_m >= 0', name='check_distance_positive')
+        "block_pois",
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("block_id", sa.Integer(), nullable=False),
+        sa.Column("poi_id", sa.Integer(), nullable=False),
+        sa.Column("distance_m", sa.Numeric(precision=10, scale=2), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.text("now()"),
+        ),
+        sa.ForeignKeyConstraint(["block_id"], ["blocks.id"], name="fk_block_pois_block_id"),
+        sa.ForeignKeyConstraint(["poi_id"], ["pois.id"], name="fk_block_pois_poi_id"),
+        sa.PrimaryKeyConstraint("id"),
+        sa.UniqueConstraint("block_id", "poi_id", name="uq_block_poi"),
+        sa.CheckConstraint("distance_m >= 0", name="check_distance_positive"),
     )
 
     # Create indexes
-    op.create_index('ix_block_pois_block_id_distance', 'block_pois', ['block_id', 'distance_m'])
-    op.create_index('ix_block_pois_poi_id', 'block_pois', ['poi_id'])
+    op.create_index("ix_block_pois_block_id_distance", "block_pois", ["block_id", "distance_m"])
+    op.create_index("ix_block_pois_poi_id", "block_pois", ["poi_id"])
 
     print("✅ Table and indexes created")
 
@@ -88,7 +94,7 @@ def upgrade() -> None:
     """
 
     result = connection.execute(text(populate_sql))
-    row_count = result.rowcount if hasattr(result, 'rowcount') else 0
+    row_count = result.rowcount if hasattr(result, "rowcount") else 0
 
     print(f"✅ Populated {row_count:,} block-POI distance records")
     print("✅ Block-POI junction table migration complete!")
@@ -99,10 +105,10 @@ def downgrade() -> None:
     print("Dropping block_pois junction table...")
 
     # Drop indexes
-    op.drop_index('ix_block_pois_poi_id', table_name='block_pois')
-    op.drop_index('ix_block_pois_block_id_distance', table_name='block_pois')
+    op.drop_index("ix_block_pois_poi_id", table_name="block_pois")
+    op.drop_index("ix_block_pois_block_id_distance", table_name="block_pois")
 
     # Drop table
-    op.drop_table('block_pois')
+    op.drop_table("block_pois")
 
     print("✅ Block-POI junction table dropped")

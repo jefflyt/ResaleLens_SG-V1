@@ -292,7 +292,6 @@ class TransactionRepository(BaseRepository[Transaction]):
         return list(result.scalars().all())
 
 
-
 class BlockRepository(BaseRepository[Block]):
     """Repository for Block model with custom queries."""
 
@@ -528,9 +527,7 @@ class BlockPOIRepository(BaseRepository):
         result = self.session.execute(query)
         return list(result.scalars().all())
 
-    def get_blocks_near_poi(
-        self, poi_id: int, max_distance_m: float = 1000
-    ) -> list:
+    def get_blocks_near_poi(self, poi_id: int, max_distance_m: float = 1000) -> list:
         """
         Get blocks within distance of POI, ordered by proximity.
 
@@ -552,9 +549,7 @@ class BlockPOIRepository(BaseRepository):
         result = self.session.execute(query)
         return list(result.scalars().all())
 
-    def upsert_distances(
-        self, block_id: int, poi_distances: list[dict[str, Any]]
-    ) -> int:
+    def upsert_distances(self, block_id: int, poi_distances: list[dict[str, Any]]) -> int:
         """
         Bulk upsert distances for a block.
 
@@ -566,7 +561,6 @@ class BlockPOIRepository(BaseRepository):
             Count of records inserted/updated
         """
         from sqlalchemy.dialects.postgresql import insert
-
 
         if not poi_distances:
             return 0

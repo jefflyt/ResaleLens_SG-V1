@@ -1,6 +1,6 @@
 """Tests for repository pattern."""
 
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 
 from resalelens.data.repositories import (
     BlockRepository,
@@ -228,19 +228,18 @@ class TestIngestionRunRepository:
 
     def test_get_latest_by_dataset(self, db_session):
         """Test getting latest run by dataset."""
-        from datetime import timezone
-        
+
         run1 = IngestionRun(
             dataset_name="test",
-            started_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+            started_at=datetime(2024, 1, 1, tzinfo=UTC),
             status=IngestionStatus.SUCCESS,
-            completed_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+            completed_at=datetime(2024, 1, 1, tzinfo=UTC),
         )
         run2 = IngestionRun(
             dataset_name="test",
-            started_at=datetime(2024, 1, 2, tzinfo=timezone.utc),
+            started_at=datetime(2024, 1, 2, tzinfo=UTC),
             status=IngestionStatus.SUCCESS,
-            completed_at=datetime(2024, 1, 2, tzinfo=timezone.utc),
+            completed_at=datetime(2024, 1, 2, tzinfo=UTC),
         )
         db_session.add_all([run1, run2])
         db_session.commit()
@@ -249,4 +248,4 @@ class TestIngestionRunRepository:
         result = repo.get_latest_by_dataset("test")
 
         assert result is not None
-        assert result.started_at == datetime(2024, 1, 2, tzinfo=timezone.utc)
+        assert result.started_at == datetime(2024, 1, 2, tzinfo=UTC)

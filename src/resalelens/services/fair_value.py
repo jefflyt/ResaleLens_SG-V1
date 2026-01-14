@@ -76,9 +76,7 @@ def select_comps(request: FairValueRequest, db: Session) -> tuple[list[Transacti
 
         # Try 24 months if not already
         if request.time_window_months < 24:
-            comps = repo.get_transactions_by_radius(
-                lat, lng, RADIUS_M, town, request.flat_type, 24
-            )
+            comps = repo.get_transactions_by_radius(lat, lng, RADIUS_M, town, request.flat_type, 24)
             if len(comps) >= MIN_COMPS_THRESHOLD:
                 return (comps, f"nearby_{RADIUS_M}m_24m")
 
@@ -112,7 +110,10 @@ def select_comps(request: FairValueRequest, db: Session) -> tuple[list[Transacti
 
 
 def normalize_comps(
-    comps: list[Transaction], user_storey_range: str, user_block_lat: float | None = None, user_block_lng: float | None = None
+    comps: list[Transaction],
+    user_storey_range: str,
+    user_block_lat: float | None = None,
+    user_block_lng: float | None = None,
 ) -> pd.DataFrame:
     """
     Normalize comparable transactions with psm and storey adjustments.
@@ -291,7 +292,9 @@ def calculate_confidence(df: pd.DataFrame, time_window_months: int) -> int:
     return min(score, 100)
 
 
-def generate_fair_value_band(df: pd.DataFrame, user_floor_area: float) -> tuple[float, float, float]:
+def generate_fair_value_band(
+    df: pd.DataFrame, user_floor_area: float
+) -> tuple[float, float, float]:
     """
     Generate Fair Value band (P25-P75) from normalized comps.
 

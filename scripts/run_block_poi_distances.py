@@ -28,9 +28,11 @@ def main():
     except Exception as e:
         print(f"\n!!! Error during ingestion: {e}")
         import traceback
+
         traceback.print_exc()
     finally:
         session.close()
+
 
 if __name__ == "__main__":
     main()

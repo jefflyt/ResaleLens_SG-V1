@@ -117,7 +117,12 @@ def test_onemap_api() -> bool:
 
         except Exception as e:
             print(f"\n❌ ERROR: {e}")
-            if "401" in str(e) or "403" in str(e) or "Unauthorized" in str(e) or "Forbidden" in str(e):
+            if (
+                "401" in str(e)
+                or "403" in str(e)
+                or "Unauthorized" in str(e)
+                or "Forbidden" in str(e)
+            ):
                 print("\n⚠️  Authentication failed. Try using ONEMAP_API_TOKEN instead:")
                 print("   1. Get your token from OneMap dashboard")
                 print("   2. Add to .env.local: ONEMAP_API_TOKEN=your-token")
@@ -234,7 +239,9 @@ def main() -> None:
         print("\nNext steps:")
         print("   1. Start server: uv run uvicorn src.resalelens.main:app --reload")
         print("   2. Trigger ingestion:")
-        print("      curl -X POST 'http://localhost:8000/admin/ingestion/trigger?dataset=hdb_transactions'")
+        print(
+            "      curl -X POST 'http://localhost:8000/admin/ingestion/trigger?dataset=hdb_transactions'"
+        )
         sys.exit(0)
     else:
         print("\n⚠️  Some tests failed. Fix the issues above before running ingestion.")

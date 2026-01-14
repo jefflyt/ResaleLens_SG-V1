@@ -3,17 +3,15 @@
 from datetime import date, timedelta
 from unittest.mock import MagicMock, Mock
 
-import numpy as np
 import pandas as pd
 import pytest
 
-from resalelens.models import Block, Transaction
+from resalelens.models import Transaction
 from resalelens.schemas.fair_value import FairValueRequest
 from resalelens.services.fair_value import (
     assign_user_label,
     build_explainability,
     calculate_confidence,
-    calculate_fair_value,
     generate_fair_value_band,
     normalize_comps,
     remove_outliers,
@@ -113,7 +111,15 @@ class TestOutlierRemoval:
         # Create DataFrame with outliers
         df = pd.DataFrame(
             {
-                "adjusted_psm": [4000, 4100, 4200, 4150, 4250, 6000, 2000]  # 6000 and 2000 are outliers
+                "adjusted_psm": [
+                    4000,
+                    4100,
+                    4200,
+                    4150,
+                    4250,
+                    6000,
+                    2000,
+                ]  # 6000 and 2000 are outliers
             }
         )
 
@@ -204,7 +210,6 @@ class TestFairValueBand:
         assert 400000 < low < 450000
         assert 420000 <= mid <= 480000  # More lenient mid range
         assert 440000 < high < 500000  # P75 is around 445000
-
 
     def test_generate_fair_value_band_empty(self):
         """Test Fair Value band with empty DataFrame."""
@@ -303,26 +308,25 @@ class TestSelectComps:
         """Test tier 1 comp selection (same block, 12m)."""
         # Create a mock repository instance
         mock_repo = MagicMock()
-        mock_repo.get_transactions_by_block.return_value = [Mock(spec=Transaction) for _ in range(10)]
+        mock_repo.get_transactions_by_block.return_value = [
+            Mock(spec=Transaction) for _ in range(10)
+        ]
 
-        # Mock the TransactionRepository class constructor  
+        # Mock the TransactionRepository class constructor
         def mock_transaction_repo_init(session):
             return mock_repo
 
         monkeypatch.setattr(
-            "resalelens.services.fair_value.TransactionRepository",
-            mock_transaction_repo_init
+            "resalelens.services.fair_value.TransactionRepository", mock_transaction_repo_init
         )
 
         # Also mock BlockRepository for safety
         mock_block_repo = MagicMock()
+
         def mock_block_repo_init(session):
             return mock_block_repo
-        
-        monkeypatch.setattr(
-            "resalelens.services.fair_value.BlockRepository",
-            mock_block_repo_init
-        )
+
+        monkeypatch.setattr("resalelens.services.fair_value.BlockRepository", mock_block_repo_init)
 
         request = FairValueRequest(
             block="123",

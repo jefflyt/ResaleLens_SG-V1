@@ -351,7 +351,7 @@ class TestTransactionBlockRelationship:
                 block="202",
                 street="ANOTHER STREET",
                 flat_type="4 ROOM",
-                storey_range=f"{i:02d} TO {i+2:02d}",
+                storey_range=f"{i:02d} TO {i + 2:02d}",
                 floor_area_sqm=90.0 + i,
                 price=450000.0 + (i * 10000),
                 lease_commence_date=1990,

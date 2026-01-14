@@ -22,9 +22,7 @@ class TestHDBTransactionsIngestion:
         },
     )
     @patch("resalelens.ingestion.hdb_transactions.fetch_json_with_retry")
-    def test_successful_ingestion(
-        self, mock_fetch: MagicMock, db_session: Session
-    ) -> None:
+    def test_successful_ingestion(self, mock_fetch: MagicMock, db_session: Session) -> None:
         """Test successful ingestion of transactions."""
         # Mock API response
         mock_fetch.return_value = {
@@ -89,9 +87,7 @@ class TestHDBTransactionsIngestion:
         },
     )
     @patch("resalelens.ingestion.hdb_transactions.fetch_json_with_retry")
-    def test_update_existing_transaction(
-        self, mock_fetch: MagicMock, db_session: Session
-    ) -> None:
+    def test_update_existing_transaction(self, mock_fetch: MagicMock, db_session: Session) -> None:
         """Test updating existing transaction."""
         # Create a block first to satisfy foreign key constraint
         from resalelens.models import Block
@@ -174,9 +170,7 @@ class TestHDBTransactionsIngestion:
         },
     )
     @patch("resalelens.ingestion.hdb_transactions.fetch_json_with_retry")
-    def test_skip_invalid_records(
-        self, mock_fetch: MagicMock, db_session: Session
-    ) -> None:
+    def test_skip_invalid_records(self, mock_fetch: MagicMock, db_session: Session) -> None:
         """Test skipping invalid records."""
         # Mock API response with one valid and one invalid record
         mock_fetch.return_value = {

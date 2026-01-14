@@ -5,14 +5,15 @@ Revises: 48e304bbcece
 Create Date: 2026-01-11 07:57:36.131160+00:00
 
 """
+
 from collections.abc import Sequence
 
 import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = '7eb00197f47f'
-down_revision: str | None = '48e304bbcece'
+revision: str = "7eb00197f47f"
+down_revision: str | None = "48e304bbcece"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
@@ -63,7 +64,9 @@ def upgrade() -> None:
 
     print("Normalizing transactions table...")
     result = connection.execute(sa.text(transactions_sql))
-    print(f"✅ Updated {result.rowcount if hasattr(result, 'rowcount') else 'all'} transaction records")
+    print(
+        f"✅ Updated {result.rowcount if hasattr(result, 'rowcount') else 'all'} transaction records"
+    )
 
     # Build SQL for blocks table
     blocks_sql = "UPDATE blocks SET street = TRIM(street_normalized) FROM ("

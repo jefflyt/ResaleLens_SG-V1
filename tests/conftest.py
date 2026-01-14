@@ -7,13 +7,13 @@ from datetime import datetime
 import pytest
 from dotenv import load_dotenv
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, event, text
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session, sessionmaker
 
 # Load test environment
 load_dotenv(".env.local")
 
-from resalelens.database import Base, get_db
+from resalelens.database import get_db
 from resalelens.main import app
 from resalelens.models import IngestionRun, IngestionStatus
 
@@ -39,7 +39,7 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engin
 def db_session() -> Generator[Session, None, None]:
     """
     Create a test database session with automatic rollback.
-    
+
     Uses nested transactions (SAVEPOINT) to ensure test isolation.
     Each test runs in its own transaction that gets rolled back after the test.
 
@@ -48,16 +48,16 @@ def db_session() -> Generator[Session, None, None]:
     """
     # Create a connection
     connection = engine.connect()
-    
+
     # Begin a non-ORM transaction
     transaction = connection.begin()
-    
+
     # Create a session bound to the connection
     session = TestingSessionLocal(bind=connection)
-    
+
     # Begin a nested transaction (uses SAVEPOINT in PostgreSQL)
     nested = connection.begin_nested()
-    
+
     # If the application code calls session.commit(), it will end the nested
     # transaction but not commit the outer transaction
     @event.listens_for(session, "after_transaction_end")
@@ -65,7 +65,7 @@ def db_session() -> Generator[Session, None, None]:
         nonlocal nested
         if not nested.is_active:
             nested = connection.begin_nested()
-    
+
     try:
         yield session
     finally:

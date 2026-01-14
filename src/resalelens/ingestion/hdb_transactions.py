@@ -56,7 +56,9 @@ def ingest_hdb_transactions(session: Session, incremental: bool = False) -> dict
 
     retry_count = int(os.getenv("INGESTION_RETRY_COUNT", "3"))
     # Rate limiting configuration
-    requests_per_minute = int(os.getenv("DATA_GOV_SG_REQUESTS_PER_MINUTE", "60"))  # Conservative default
+    requests_per_minute = int(
+        os.getenv("DATA_GOV_SG_REQUESTS_PER_MINUTE", "60")
+    )  # Conservative default
     delay_between_requests = 60.0 / requests_per_minute if requests_per_minute > 0 else 1.0
     max_records = int(os.getenv("INGESTION_MAX_RECORDS", "0"))  # 0 = no limit
 
@@ -129,23 +131,25 @@ def ingest_hdb_transactions(session: Session, incremental: bool = False) -> dict
                             continue
 
                         # Add to batch
-                        transactions_batch.append({
-                            "date": date_obj.date(),
-                            "block": record["block"],
-                            "street": normalize_street_name(record["street_name"]),
-                            "flat_type": record["flat_type"],
-                            "storey_range": record["storey_range"],
-                            "floor_area_sqm": float(record["floor_area_sqm"]),
-                            "price": float(record["resale_price"]),
-                            "lease_commence_date": int(record["lease_commence_date"]),
-                            "town": record["town"],
-                            "flat_model": record["flat_model"],
-                            "latitude": None,  # Will be populated by blocks ingestion
-                            "longitude": None,
-                            "ingestion_run_id": run.id,
-                            "created_at": datetime.utcnow(),
-                            "updated_at": datetime.utcnow(),
-                        })
+                        transactions_batch.append(
+                            {
+                                "date": date_obj.date(),
+                                "block": record["block"],
+                                "street": normalize_street_name(record["street_name"]),
+                                "flat_type": record["flat_type"],
+                                "storey_range": record["storey_range"],
+                                "floor_area_sqm": float(record["floor_area_sqm"]),
+                                "price": float(record["resale_price"]),
+                                "lease_commence_date": int(record["lease_commence_date"]),
+                                "town": record["town"],
+                                "flat_model": record["flat_model"],
+                                "latitude": None,  # Will be populated by blocks ingestion
+                                "longitude": None,
+                                "ingestion_run_id": run.id,
+                                "created_at": datetime.utcnow(),
+                                "updated_at": datetime.utcnow(),
+                            }
+                        )
 
                     except Exception as e:
                         print(f"Error processing record: {e}")
@@ -176,21 +180,30 @@ def ingest_hdb_transactions(session: Session, incremental: bool = False) -> dict
                         else:
                             summary["skipped"] += 1  # Count as skipped duplicate
 
-                    print(f"Bulk upserting {len(deduplicated_batch)} records (skipped {len(transactions_batch) - len(deduplicated_batch)} in-batch duplicates)...")
+                    print(
+                        f"Bulk upserting {len(deduplicated_batch)} records (skipped {len(transactions_batch) - len(deduplicated_batch)} in-batch duplicates)..."
+                    )
 
                     stmt = insert(Transaction).values(deduplicated_batch)
 
                     # On conflict, update the existing record
                     stmt = stmt.on_conflict_do_update(
-                        index_elements=['block', 'street', 'flat_type', 'date', 'storey_range', 'floor_area_sqm'],
+                        index_elements=[
+                            "block",
+                            "street",
+                            "flat_type",
+                            "date",
+                            "storey_range",
+                            "floor_area_sqm",
+                        ],
                         set_={
-                            'price': stmt.excluded.price,
-                            'lease_commence_date': stmt.excluded.lease_commence_date,
-                            'town': stmt.excluded.town,
-                            'flat_model': stmt.excluded.flat_model,
-                            'ingestion_run_id': stmt.excluded.ingestion_run_id,
-                            'updated_at': stmt.excluded.updated_at,
-                        }
+                            "price": stmt.excluded.price,
+                            "lease_commence_date": stmt.excluded.lease_commence_date,
+                            "town": stmt.excluded.town,
+                            "flat_model": stmt.excluded.flat_model,
+                            "ingestion_run_id": stmt.excluded.ingestion_run_id,
+                            "updated_at": stmt.excluded.updated_at,
+                        },
                     )
 
                     session.execute(stmt)
@@ -204,7 +217,9 @@ def ingest_hdb_transactions(session: Session, incremental: bool = False) -> dict
 
                 # Rate limiting: pause between API requests
                 if has_more and delay_between_requests > 0:
-                    print(f"Rate limiting: sleeping {delay_between_requests:.2f}s before next request")
+                    print(
+                        f"Rate limiting: sleeping {delay_between_requests:.2f}s before next request"
+                    )
                     time.sleep(delay_between_requests)
 
                 # Check if there are more records
@@ -226,4 +241,3 @@ def ingest_hdb_transactions(session: Session, incremental: bool = False) -> dict
         print(f"HDB transactions ingestion complete: {summary}")
 
     return summary
-
