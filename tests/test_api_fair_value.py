@@ -12,10 +12,10 @@ class TestFairValueAPI:
     @pytest.fixture
     def api_test_data(self, db_session, sample_ingestion_run):
         """Create test data for API tests."""
-        # Create block
+        # Create block with normalized street name (as it would be stored in DB)
         block = Block(
             block="123",
-            street="ANG MO KIO AVE 3",
+            street="ANG MO KIO AVENUE 3",  # Normalized (AVENUE not AVE)
             town="ANG MO KIO",
             latitude=1.3691,
             longitude=103.8454,
@@ -24,7 +24,7 @@ class TestFairValueAPI:
         db_session.commit()
         db_session.refresh(block)
 
-        # Create transactions
+        # Create transactions with normalized street name
         from datetime import date, timedelta
         transactions = []
         base_date = date.today() - timedelta(days=60)
@@ -33,7 +33,7 @@ class TestFairValueAPI:
             txn = Transaction(
                 date=base_date + timedelta(days=i * 4),
                 block="123",
-                street="ANG MO KIO AVE 3",
+                street="ANG MO KIO AVENUE 3",  # Normalized
                 flat_type="4 ROOM",
                 storey_range="04 TO 06",
                 floor_area_sqm=90.0,
@@ -66,7 +66,7 @@ class TestFairValueAPI:
             "/api/fair-value",
             data={
                 "block": "123",
-                "street": "ANG MO KIO AVE 3",
+                "street": "ANG MO KIO AVENUE 3",  # Normalized
                 "flat_type": "4 ROOM",
                 "floor_area_sqm": "90.0",
                 "storey_range": "04 TO 06",
@@ -90,7 +90,7 @@ class TestFairValueAPI:
             "/api/fair-value",
             data={
                 "block": "123",
-                "street": "ANG MO KIO AVE 3",
+                "street": "ANG MO KIO AVENUE 3",  # Normalized
                 "flat_type": "4 ROOM",
                 "floor_area_sqm": "90.0",
                 "storey_range": "04 TO 06",
@@ -176,7 +176,7 @@ class TestFairValueAPI:
             "/api/fair-value",
             data={
                 "block": "123",
-                "street": "ANG MO KIO AVE 3",
+                "street": "ANG MO KIO AVENUE 3",  # Normalized
                 "flat_type": "4 ROOM",
                 "floor_area_sqm": "30.0",  # Minimum
                 "storey_range": "04 TO 06",
@@ -193,7 +193,7 @@ class TestFairValueAPI:
             "/api/fair-value",
             data={
                 "block": "123",
-                "street": "ANG MO KIO AVE 3",
+                "street": "ANG MO KIO AVENUE 3",  # Normalized
                 "flat_type": "4 ROOM",
                 "floor_area_sqm": "90.0",
                 "storey_range": "04 TO 06",
@@ -205,3 +205,109 @@ class TestFairValueAPI:
 
         # last_updated should be present (may be None if no ingestion runs)
         assert "last_updated" in data
+
+    # ===== Address Normalization Tests =====
+
+    def test_fair_value_with_lowercase_input(self, client: TestClient, api_test_data):
+        """Test that lowercase block and street names are normalized and work correctly."""
+        block, transactions = api_test_data
+
+        response = client.post(
+            "/api/fair-value",
+            data={
+                "block": "123",  # lowercase
+                "street": "ang mo kio avenue 3",  # lowercase (will be normalized)
+                "flat_type": "4 ROOM",
+                "floor_area_sqm": "90.0",
+                "storey_range": "04 TO 06",
+            },
+        )
+
+        # Should successfully normalize and return 200 (not 404 "Block not found")
+        assert response.status_code == 200
+        data = response.json()
+        # Verify response structure (normalization worked, block was found)
+        assert "fair_value_mid" in data
+        assert "confidence_score" in data
+
+    def test_fair_value_with_abbreviated_street(self, client: TestClient, api_test_data):
+        """Test that abbreviated street names (AVE instead of AVENUE) are normalized."""
+        block, transactions = api_test_data
+
+        response = client.post(
+            "/api/fair-value",
+            data={
+                "block": "123",
+                "street": "ANG MO KIO AVE 3",  # AVE should expand to AVENUE
+                "flat_type": "4 ROOM",
+                "floor_area_sqm": "90.0",
+                "storey_range": "04 TO 06",
+            },
+        )
+
+        # Should successfully normalize and return 200
+        assert response.status_code == 200
+        data = response.json()
+        assert "fair_value_mid" in data
+
+    def test_fair_value_with_extra_whitespace(self, client: TestClient, api_test_data):
+        """Test that extra whitespace in block and street is trimmed."""
+        block, transactions = api_test_data
+
+        response = client.post(
+            "/api/fair-value",
+            data={
+                "block": "  123  ",  # Extra spaces
+                "street": "  ANG MO KIO AVENUE 3  ",  # Extra spaces
+                "flat_type": "4 ROOM",
+                "floor_area_sqm": "90.0",
+                "storey_range": "04 TO 06",
+            },
+        )
+
+        # Should successfully normalize and return 200
+        assert response.status_code == 200
+        data = response.json()
+        assert "fair_value_mid" in data
+
+    def test_fair_value_with_mixed_case_and_abbreviations(self, client: TestClient, api_test_data):
+        """Test combination of lowercase and abbreviations."""
+        block, transactions = api_test_data
+
+        response = client.post(
+            "/api/fair-value",
+            data={
+                "block": "123",
+                "street": "ang mo kio ave 3",  # lowercase + abbreviation
+                "flat_type": "4 ROOM",
+                "floor_area_sqm": "90.0",
+                "storey_range": "04 TO 06",
+            },
+        )
+
+        # Should successfully normalize and return 200
+        assert response.status_code == 200
+        data = response.json()
+        assert "fair_value_mid" in data
+
+    def test_fair_value_normalization_with_htmx(self, client: TestClient, api_test_data):
+        """Test that normalization works for HTMX requests (HTML response)."""
+        block, transactions = api_test_data
+
+        response = client.post(
+            "/api/fair-value",
+            data={
+                "block": "123",
+                "street": "ang mo kio ave 3",  # lowercase + abbreviated
+                "flat_type": "4 ROOM",
+                "floor_area_sqm": "90.0",
+                "storey_range": "04 TO 06",
+            },
+            headers={"HX-Request": "true"},
+        )
+
+        assert response.status_code == 200
+        assert "text/html" in response.headers["content-type"]
+        assert "Fair Value Assessment" in response.text
+
+

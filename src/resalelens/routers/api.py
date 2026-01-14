@@ -10,6 +10,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from ..database import SessionLocal
+from ..ingestion.utils import normalize_street_name
 from ..models import IngestionRun, IngestionStatus
 from ..schemas.fair_value import FairValueRequest, FairValueResponse
 from ..services.fair_value import calculate_fair_value
@@ -90,10 +91,21 @@ async def calculate_fair_value_api(
         # Parse form data
         form_data = await request.form()
 
-        # Build Fair Value request
+        # Normalize user input to match database format
+        # This allows users to enter addresses with abbreviations, lowercase, extra spaces, etc.
+        block_input = form_data.get("block", "")
+        street_input = form_data.get("street", "")
+        
+        # Normalize block: uppercase and strip whitespace
+        normalized_block = block_input.upper().strip() if block_input else ""
+        
+        # Normalize street: expand abbreviations, uppercase, strip whitespace
+        normalized_street = normalize_street_name(street_input) if street_input else ""
+
+        # Build Fair Value request with normalized inputs
         fv_request = FairValueRequest(
-            block=form_data.get("block"),
-            street=form_data.get("street"),
+            block=normalized_block,
+            street=normalized_street,
             flat_type=form_data.get("flat_type"),
             floor_area_sqm=float(form_data.get("floor_area_sqm")),
             storey_range=form_data.get("storey_range"),
