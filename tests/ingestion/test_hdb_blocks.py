@@ -92,9 +92,6 @@ class TestHDBBlocksIngestion:
         self, mock_get_token: MagicMock, mock_geocode: MagicMock, db_session: Session
     ) -> None:
         """Test successful ingestion of blocks."""
-        # Count existing blocks before test
-        initial_block_count = db_session.query(Block).count()
-
         # Create sample transactions to extract blocks from
         run = IngestionRun(
             dataset_name="hdb_transactions",
