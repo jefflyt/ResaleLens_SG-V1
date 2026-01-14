@@ -93,23 +93,35 @@ async def calculate_fair_value_api(
 
         # Normalize user input to match database format
         # This allows users to enter addresses with abbreviations, lowercase, extra spaces, etc.
-        block_input = form_data.get("block", "")
-        street_input = form_data.get("street", "")
+        block_input = form_data.get("block")
+        street_input = form_data.get("street")
+        flat_type_input = form_data.get("flat_type")
+        floor_area_input = form_data.get("floor_area_sqm")
+        storey_range_input = form_data.get("storey_range")
+        time_window_input = form_data.get("time_window_months", "12")
+
+        # Ensure we have string values (form_data.get returns UploadFile | str | None)
+        block_str = str(block_input) if block_input else ""
+        street_str = str(street_input) if street_input else ""
+        flat_type_str = str(flat_type_input) if flat_type_input else ""
+        floor_area_str = str(floor_area_input) if floor_area_input else "0"
+        storey_range_str = str(storey_range_input) if storey_range_input else ""
+        time_window_str = str(time_window_input) if time_window_input else "12"
 
         # Normalize block: uppercase and strip whitespace
-        normalized_block = block_input.upper().strip() if block_input else ""
+        normalized_block = block_str.upper().strip()
 
         # Normalize street: expand abbreviations, uppercase, strip whitespace
-        normalized_street = normalize_street_name(street_input) if street_input else ""
+        normalized_street = normalize_street_name(street_str)
 
         # Build Fair Value request with normalized inputs
         fv_request = FairValueRequest(
             block=normalized_block,
             street=normalized_street,
-            flat_type=form_data.get("flat_type"),
-            floor_area_sqm=float(form_data.get("floor_area_sqm")),
-            storey_range=form_data.get("storey_range"),
-            time_window_months=int(form_data.get("time_window_months", 12)),
+            flat_type=flat_type_str,
+            floor_area_sqm=float(floor_area_str),
+            storey_range=storey_range_str,
+            time_window_months=int(time_window_str),
         )
 
         # Calculate Fair Value using service
