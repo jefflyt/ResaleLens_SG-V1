@@ -8,7 +8,6 @@ from datetime import datetime
 from sqlalchemy import distinct
 from sqlalchemy.orm import Session
 
-from ..api.onemap import OneMapClient
 from ..data.repositories import BlockRepository
 from ..models import Block, Transaction
 from .utils import log_ingestion_run, normalize_street_name
@@ -41,7 +40,8 @@ def ingest_hdb_blocks(
         Exception: If ingestion fails critically
     """
     repo = BlockRepository(session)
-    onemap_client = OneMapClient()
+    # NOTE: This ingestion method is deprecated - use hdb_postal_codes.py for postal code ingestion
+    # onemap_client = OneMapClient()  # Removed - OneMap API no longer used
 
     summary = {
         "total_blocks": 0,
@@ -86,7 +86,7 @@ def ingest_hdb_blocks(
                 existing = repo.get_by_block_and_street(block, street)
 
                 # Skip if block already has coordinates and skip_existing is True
-                if skip_existing and existing and existing.latitude is not None:
+                if skip_existing and existing and existing.latitude is not None and existing.postal_code is not None:
                     print(f"Skipping {block} {street} (already geocoded)")
                     continue
 
@@ -104,10 +104,12 @@ def ingest_hdb_blocks(
                 if geocode_result:
                     latitude = geocode_result["latitude"]
                     longitude = geocode_result["longitude"]
+                    postal_code = geocode_result["postal_code"]
                     summary["geocoded"] += 1
                 else:
                     latitude = None
                     longitude = None
+                    postal_code = None
                     summary["geocoding_failed"] += 1
                     print(f"Warning: Geocoding failed for {full_address}")
 
@@ -115,9 +117,10 @@ def ingest_hdb_blocks(
                     # Update existing block
                     existing.latitude = latitude
                     existing.longitude = longitude
+                    existing.postal_code = postal_code
                     existing.lease_commence_year = lease_commence_date
                     existing.last_updated = datetime.utcnow()
-                    repo.update(existing)
+                    # repo.update(existing) - Avoid per-record commit for performance
                     summary["updated"] += 1
                 else:
                     # Create new block
@@ -127,6 +130,7 @@ def ingest_hdb_blocks(
                         town=town,
                         latitude=latitude,
                         longitude=longitude,
+                        postal_code=postal_code,
                         lease_commence_year=lease_commence_date,
                         last_updated=datetime.utcnow(),
                     )

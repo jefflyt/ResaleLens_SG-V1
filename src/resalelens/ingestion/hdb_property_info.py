@@ -9,51 +9,7 @@ from sqlalchemy.orm import Session
 
 from ..data.repositories import BlockRepository
 from ..models import Block
-from .utils import fetch_json_with_retry, log_ingestion_run
-
-
-def normalize_street_name(street: str) -> str:
-    """
-    Normalize street name for matching.
-
-    Handles abbreviations and case differences.
-
-    Args:
-        street: Street name to normalize
-
-    Returns:
-        Normalized street name
-    """
-    # Convert to uppercase
-    normalized = street.upper().strip()
-
-    # Expand common abbreviations
-    abbreviations = {
-        " ST ": " STREET ",
-        " AVE ": " AVENUE ",
-        " DR ": " DRIVE ",
-        " RD ": " ROAD ",
-        " CRES ": " CRESCENT ",
-        " PL ": " PLACE ",
-        " TER ": " TERRACE ",
-        " CL ": " CLOSE ",
-        " CTRL ": " CENTRAL ",
-        " PK ": " PARK ",
-        " HTS ": " HEIGHTS ",
-        " GDN ": " GARDEN ",
-        " GDNS ": " GARDENS ",
-        " LOR ": " LORONG ",
-        " JLN ": " JALAN ",
-        " UPP ": " UPPER ",
-        " LWR ": " LOWER ",
-        " NTH ": " NORTH ",
-        " STH ": " SOUTH ",
-    }
-
-    for abbr, full in abbreviations.items():
-        normalized = normalized.replace(abbr, full)
-
-    return normalized
+from .utils import fetch_json_with_retry, log_ingestion_run, normalize_street_name
 
 
 def parse_bool(value: str) -> bool:
@@ -91,8 +47,6 @@ def ingest_hdb_property_info(session: Session) -> dict[str, int]:
     resource_id = "d_17f5382f26140b1fdae0ba2ef6239d2f"
     api_url = os.getenv("DATA_GOV_SG_API_URL", "https://data.gov.sg/api/action/datastore_search")
 
-    repo = BlockRepository(session)
-
     summary = {
         "total_fetched": 0,
         "matched": 0,
@@ -101,11 +55,19 @@ def ingest_hdb_property_info(session: Session) -> dict[str, int]:
     }
 
     with log_ingestion_run(session, "hdb_property_info") as run:
-        print(f"Fetching HDB property information from {api_url}")
+        print("Pre-loading blocks from database...")
+        # Load all blocks into memory for fast matching
+        # Map (block, street) -> Block object
+        all_blocks_list = session.query(Block).all()
+        blocks_map = {(b.block, b.street): b for b in all_blocks_list}
+        # Fallback map using normalized street names: (block, normalized_street) -> Block object
+        normalized_map = {(b.block, normalize_street_name(b.street)): b for b in all_blocks_list}
+
+        print(f"Loaded {len(blocks_map)} blocks. Fetching HDB property information from {api_url}")
 
         # Fetch all records (paginated)
         offset = 0
-        limit = 1000
+        limit = 5000  # Larger limit for fewer requests
 
         while True:
             try:
@@ -121,7 +83,7 @@ def ingest_hdb_property_info(session: Session) -> dict[str, int]:
 
                 result = response.get("result", {})
                 records = result.get("records", [])
-                total = result.get("total", 0)
+                total = int(result.get("total", 0))
 
                 if not records:
                     break
@@ -142,21 +104,17 @@ def ingest_hdb_property_info(session: Session) -> dict[str, int]:
 
                         # Try to find matching block
                         # First try exact match
-                        block = repo.get_by_block_and_street(blk_no, street)
+                        block = blocks_map.get((blk_no, street))
 
                         # If no exact match, try normalized street name
                         if not block:
                             normalized_street = normalize_street_name(street)
-                            # Search all blocks with same block number
-                            all_blocks = session.query(Block).filter(Block.block == blk_no).all()
-                            for b in all_blocks:
-                                if normalize_street_name(b.street) == normalized_street:
-                                    block = b
-                                    break
+                            block = normalized_map.get((blk_no, normalized_street))
 
                         if not block:
                             summary["unmatched"] += 1
                             continue
+
 
                         # Update block with property info
                         block.max_floor_lvl = parse_int(record.get("max_floor_lvl"))

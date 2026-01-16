@@ -8,9 +8,11 @@ from sqlalchemy.orm import Session
 from ..database import SessionLocal
 from ..ingestion.block_pois import ingest_block_pois
 from ..ingestion.hdb_blocks import ingest_hdb_blocks
+from ..ingestion.hdb_postal_codes import ingest_hdb_postal_codes
 from ..ingestion.hdb_property_info import ingest_hdb_property_info
 from ..ingestion.hdb_transactions import ingest_hdb_transactions
 from ..ingestion.pois import ingest_pois
+from ..ingestion.transaction_backfill import ingest_transaction_backfill
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -28,7 +30,7 @@ def get_db() -> Generator[Session, None, None]:
 async def trigger_ingestion(
     dataset: str = Query(
         "hdb_transactions",
-        description="Dataset to ingest (hdb_transactions, hdb_blocks, hdb_property_info, pois, or block_pois)",
+        description="Dataset to ingest (hdb_transactions, hdb_blocks, hdb_postal_codes, hdb_property_info, pois, block_pois, or transaction_backfill)",
     ),
     incremental: bool = Query(
         False, description="If True, only fetch new records since last run (for hdb_transactions)"
@@ -67,6 +69,14 @@ async def trigger_ingestion(
                 "dataset": dataset,
                 "summary": summary,
             }
+        elif dataset == "hdb_postal_codes":
+            print("Triggering HDB postal codes ingestion...")
+            summary = ingest_hdb_postal_codes(db)
+            return {
+                "status": "success",
+                "dataset": dataset,
+                "summary": summary,
+            }
         elif dataset == "hdb_property_info":
             print("Triggering HDB property information ingestion...")
             summary = ingest_hdb_property_info(db)
@@ -93,10 +103,18 @@ async def trigger_ingestion(
                 "dataset": dataset,
                 "summary": summary,
             }
+        elif dataset == "transaction_backfill":
+            print("Triggering transaction backfill (block_id, latitude, longitude)...")
+            summary = ingest_transaction_backfill(db)
+            return {
+                "status": "success",
+                "dataset": dataset,
+                "summary": summary,
+            }
         else:
             raise HTTPException(
                 status_code=400,
-                detail=f"Invalid dataset: {dataset}. Must be 'hdb_transactions', 'hdb_blocks', 'hdb_property_info', 'pois', or 'block_pois'",
+                detail=f"Invalid dataset: {dataset}. Must be 'hdb_transactions', 'hdb_blocks', 'hdb_postal_codes', 'hdb_property_info', 'pois', 'block_pois', or 'transaction_backfill'",
             )
 
     except ValueError as e:

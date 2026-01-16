@@ -179,6 +179,7 @@ class Block(Base):
     street: Mapped[str] = mapped_column(String(255), nullable=False)
     town: Mapped[str] = mapped_column(String(100), nullable=False)
     postal_code: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    postal_sector: Mapped[str | None] = mapped_column(String(2), nullable=True)
     latitude: Mapped[float | None] = mapped_column(Numeric(10, 7), nullable=True)
     longitude: Mapped[float | None] = mapped_column(Numeric(10, 7), nullable=True)
     lease_commence_year: Mapped[int | None] = mapped_column(Integer, nullable=True)
@@ -229,6 +230,8 @@ class Block(Base):
         UniqueConstraint("block", "street", name="uq_block_street"),
         Index("ix_blocks_block_street", "block", "street"),
         Index("ix_blocks_town", "town"),
+        Index("idx_blocks_postal_code", "postal_code"),
+        Index("idx_blocks_postal_sector", "postal_sector"),
         CheckConstraint("latitude >= -90 AND latitude <= 90", name="check_block_latitude_range"),
         CheckConstraint(
             "longitude >= -180 AND longitude <= 180", name="check_block_longitude_range"

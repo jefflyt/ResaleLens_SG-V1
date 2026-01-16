@@ -1,0 +1,27 @@
+🚀 Running HDB Postal Code Ingestion
+   batch_size=500, skip_existing=False
+================================================================================
+Fetching HDB Existing Building GeoJSON from data.gov.sg...
+Got download URL
+Downloaded 13352 features
+Batch processing: limiting to 500 features
+⚠️  Not found: postal=650514, block=514, street=BUKIT BATOK STREET 52 GUILIN
+⚠️  Not found: postal=600021, block=21, street=TEBAN GARDENS ROAD TEBAN
+⚠️  Not found: postal=640697, block=697, street=JURONG WEST CENTRAL 3 JURONG WEST BLOSSOM
+⚠️  Not found: postal=563307, block=307C, street=ANG MO KIO AVENUE 1 TECK GHEE
+⚠️  Not found: postal=650422, block=422, street=BUKIT BATOK WEST AVENUE 2
+Processed 50/500 features
+✓ Committed: 100 blocks updated
+Processed 350/500 features
+
+✅ HDB postal codes ingestion complete:
+  - Total features: 13352
+  - Geocoding attempted: 500
+  - Geocoding failed: 0
+  - Blocks matched: 169
+  - Postal codes added: 10
+  - Blocks not found: 331
+
+================================================================================
+✅ Ingestion completed successfully!
+Summary: {'total_features': 13352, 'geocoding_attempted': 500, 'geocoding_failed': 0, 'blocks_matched': 169, 'blocks_not_found': 331, 'postal_codes_added': 10, 'postal_sectors_calculated': 169}

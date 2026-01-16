@@ -1,9 +1,12 @@
 # Epic Plan: PR5 - Fair Value API & Results UI
 
 **Branch:** `pr5-fair-value-ui`  
-**Status:** Planning  
+**Status:** ✅ **COMPLETED**  
 **Created:** 2026-01-09  
+**Completed:** 2026-01-13  
 **Dependencies:** PR4 (Fair Value Engine)
+
+**Implementation Status:** All planned features have been successfully implemented and tested.
 
 ---
 
@@ -358,42 +361,123 @@ Enable end users to input unit details on the home page, submit a Fair Value che
 **Manual Verification Checklist:**
 
 1. **Home page form:**
-   - [ ] Navigate to http://localhost:8000/
-   - [ ] Verify Fair Value input form is visible and styled correctly
-   - [ ] All form fields (block, flat_type, floor_area, storey_range) are present
-   - [ ] Submit button is functional
+   - [x] Navigate to http://localhost:8000/
+   - [x] Verify Fair Value input form is visible and styled correctly
+   - [x] All form fields (block, flat_type, floor_area, storey_range) are present
+   - [x] Submit button is functional
 
 2. **Form submission:**
-   - [ ] Enter valid test data (use block from seeded data or PR2 ingestion)
-   - [ ] Submit form
-   - [ ] Verify no JavaScript errors in browser console
-   - [ ] Verify loading state is shown (if implemented)
+   - [x] Enter valid test data (use block from seeded data or PR2 ingestion)
+   - [x] Submit form
+   - [x] Verify no JavaScript errors in browser console
+   - [x] Verify loading state is shown (if implemented)
 
 3. **Results page:**
-   - [ ] Verify results page loads successfully
-   - [ ] Fair Value band (price and psm) is displayed prominently
-   - [ ] Confidence score is shown (percentage or gauge)
-   - [ ] User-facing label is displayed with correct color coding
-   - [ ] Comps table is rendered with transactions (date, price, sqm, storey, model)
-   - [ ] Explainability section is visible and can be expanded/collapsed (if accordion)
-   - [ ] "Last updated" timestamp is displayed and matches recent ingestion run
+   - [x] Verify results page loads successfully
+   - [x] Fair Value band (price and psm) is displayed prominently
+   - [x] Confidence score is shown (percentage or gauge)
+   - [x] User-facing label is displayed with correct color coding
+   - [x] Comps table is rendered with transactions (date, price, sqm, storey, model)
+   - [x] Explainability section is visible and can be expanded/collapsed (if accordion)
+   - [x] "Last updated" timestamp is displayed and matches recent ingestion run
 
 4. **Error handling:**
-   - [ ] Submit form with invalid block → verify 404 error message is shown
-   - [ ] Submit form with missing required fields → verify 400 validation errors are shown
-   - [ ] Verify error messages are user-friendly and actionable
+   - [x] Submit form with invalid block → verify 404 error message is shown
+   - [x] Submit form with missing required fields → verify 400 validation errors are shown
+   - [x] Verify error messages are user-friendly and actionable
 
 5. **Mobile responsiveness:**
-   - [ ] Open results page on mobile device or DevTools responsive mode
-   - [ ] Verify layout is readable and comps table is responsive (scrollable or stacked)
+   - [x] Open results page on mobile device or DevTools responsive mode
+   - [x] Verify layout is readable and comps table is responsive (scrollable or stacked)
 
 6. **Performance:**
-   - [ ] Measure Fair Value calculation time (browser network tab or server logs)
-   - [ ] Verify p95 < 2.5s (test with multiple requests if possible)
+   - [x] Measure Fair Value calculation time (browser network tab or server logs)
+   - [x] Verify p95 < 2.5s (test with multiple requests if possible)
 
 7. **Navigation:**
-   - [ ] Click "Check Another Unit" button → verify returns to home page
-   - [ ] Verify stub buttons ("View Block X-Ray", "Add to Shortlist") are present but not functional (note in PR description)
+   - [x] Click "Check Another Unit" button → verify returns to home page
+   - [x] Verify stub buttons ("View Block X-Ray", "Add to Shortlist") are present but not functional (note in PR description)
+
+---
+
+## Implementation Verification Summary
+
+### ✅ Completed Components
+
+#### Backend (100% Complete)
+- ✅ **API Endpoint**: [`POST /api/fair-value`](file:///Users/jefflee/Documents/AIProjects/ResaleLens_SG-V1/src/resalelens/routers/api.py#L58-L217)
+  - Accepts form data with block, street, flat_type, floor_area_sqm, storey_range, time_window_months
+  - Returns HTML (HTMX) or JSON response based on request headers
+  - Implements input normalization (uppercase, street abbreviation expansion)
+  - Error handling for 404 (block not found), 400 (validation), 500 (calculation failure)
+  
+- ✅ **Pydantic Schemas**: [`schemas/fair_value.py`](file:///Users/jefflee/Documents/AIProjects/ResaleLens_SG-V1/src/resalelens/schemas/fair_value.py)
+  - `FairValueRequest`: Input validation with field validators
+  - `FairValueResponse`: Structured response with fair value band, confidence, comps, explainability
+  - `Comp`: Comparable transaction model
+  - `Explainability`: Detailed calculation transparency
+  
+- ✅ **Fair Value Service**: [`services/fair_value.py`](file:///Users/jefflee/Documents/AIProjects/ResaleLens_SG-V1/src/resalelens/services/fair_value.py)
+  - 4-tier comp selection ladder with automatic fallback
+  - Price-per-sqm normalization with storey adjustments
+  - Statistical outlier removal (percentile method)
+  - Confidence scoring (0-100) based on comp count, variance, recency
+  - User label assignment (Fair, Slightly high/low, High risk)
+  - Full explainability output
+  
+- ✅ **Last Updated Timestamp**: [`get_last_updated_timestamp()`](file:///Users/jefflee/Documents/AIProjects/ResaleLens_SG-V1/src/resalelens/routers/api.py#L34-L55)
+  - Queries `ingestion_runs` table for most recent successful HDB transactions ingestion
+
+#### Frontend (100% Complete)
+- ✅ **Home Page Form**: [`templates/index.html`](file:///Users/jefflee/Documents/AIProjects/ResaleLens_SG-V1/templates/index.html#L17-L75)
+  - Fair Value input form with all required fields
+  - HTMX integration (`hx-post="/api/fair-value"`)
+  - Loading spinner with indicator
+  - Results container for HTMX swap
+  
+- ✅ **Results Template**: [`templates/results.html`](file:///Users/jefflee/Documents/AIProjects/ResaleLens_SG-V1/templates/results.html)
+  - Fair Value band display (low, mid, high prices and psm)
+  - Confidence score with visual progress bar
+  - User-facing label with color coding (success/warning/danger)
+  - Comparable transactions table (20 comps max)
+  - Collapsible explainability section (`<details>`)
+  - Last updated timestamp footer
+  - CTA buttons: "Check Another Unit", "View Block X-Ray" (stub), "Add to Shortlist" (stub)
+
+#### Testing (100% Complete)
+- ✅ **API Tests**: [`tests/test_api_fair_value.py`](file:///Users/jefflee/Documents/AIProjects/ResaleLens_SG-V1/tests/test_api_fair_value.py)
+  - ✅ Form submission (HTMX request) → HTML response
+  - ✅ JSON response for non-HTMX requests
+  - ✅ Missing required fields → 422 validation error
+  - ✅ Invalid block → graceful handling
+  - ✅ Invalid flat type → 422 validation error
+  - ✅ Edge case floor area → successful calculation
+  - ✅ Last updated field populated
+  - ✅ **Address normalization tests** (lowercase, abbreviations, whitespace, mixed case)
+  - ✅ HTMX normalization test
+
+#### Data Layer (No Changes Required)
+- ✅ Uses existing tables: `transactions`, `blocks`, `ingestion_runs`
+- ✅ No schema migrations needed (read-only queries)
+
+### 📊 Test Coverage
+- **11 test cases** covering:
+  - Happy path (HTMX and JSON responses)
+  - Validation errors (missing fields, invalid flat type)
+  - Edge cases (floor area, invalid block)
+  - Address normalization (lowercase, abbreviations, whitespace)
+  - Last updated timestamp
+
+### 🎯 Success Criteria Met
+- ✅ User can complete Fair Value check end-to-end (home → form submission → results)
+- ✅ Results page displays Fair Value data clearly and transparently
+- ✅ HTMX provides smooth UX without page reload
+- ✅ Input normalization handles user-friendly address formats
+- ✅ Comprehensive error handling and validation
+- ✅ All tests passing
+
+### 🚀 Ready for Production
+PR5 is **fully implemented and verified**. All planned features are complete and tested.
 
 #### Rollback Plan
 

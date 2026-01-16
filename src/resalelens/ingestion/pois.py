@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
-from ..api.onemap import OneMapClient
+# NOTE: OneMap API client removed - POI ingestion still uses external API but is separate from postal codes
 from ..models import POI, POIType
 from .utils import log_ingestion_run
 
@@ -28,7 +28,9 @@ def ingest_pois(session: Session) -> dict[str, int]:
     Returns:
         Summary of ingestion
     """
-    client = OneMapClient()
+    # NOTE: POI ingestion temporarily disabled - OneMap client removed
+    # client = OneMapClient()
+    raise NotImplementedError("POI ingestion requires OneMap API client which has been removed. Use alternative data source.")
 
     summary = {
         "total_found": 0,

@@ -1,0 +1,427 @@
+{% extends "base.html" %}
+
+{% block title %}Block X-Ray: {{ block.block }} {{ block.street }}{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+    .block-xray-container {
+        max-width: 1200px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+
+    .block-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+    }
+
+    .block-header h1 {
+        margin: 0 0 0.5rem 0;
+        font-size: 2rem;
+    }
+
+    .block-header p {
+        margin: 0.25rem 0;
+        opacity: 0.9;
+    }
+
+    .section-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .info-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .info-card h2 {
+        margin: 0 0 1rem 0;
+        font-size: 1.25rem;
+        color: #333;
+        border-bottom: 2px solid #667eea;
+        padding-bottom: 0.5rem;
+    }
+
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .info-row:last-child {
+        border-bottom: none;
+    }
+
+    .info-label {
+        font-weight: 600;
+        color: #666;
+    }
+
+    .info-value {
+        color: #333;
+    }
+
+    .facility-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+
+    .badge {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    .badge-success {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .badge-info {
+        background: #d1ecf1;
+        color: #0c5460;
+    }
+
+    .amenity-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .amenity-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .amenity-item:last-child {
+        border-bottom: none;
+    }
+
+    .amenity-icon {
+        font-size: 1.5rem;
+        margin-right: 0.75rem;
+    }
+
+    .amenity-info {
+        flex: 1;
+    }
+
+    .amenity-name {
+        font-weight: 500;
+        color: #333;
+    }
+
+    .amenity-type {
+        font-size: 0.85rem;
+        color: #666;
+    }
+
+    .amenity-distance {
+        font-weight: 600;
+        color: #667eea;
+    }
+
+    .chart-container {
+        position: relative;
+        height: 300px;
+        margin-top: 1rem;
+    }
+
+    .composition-table {
+        width: 100%;
+        margin-top: 1rem;
+        border-collapse: collapse;
+    }
+
+    .composition-table th {
+        text-align: left;
+        padding: 0.5rem;
+        border-bottom: 2px solid #e0e0e0;
+        font-weight: 600;
+        color: #666;
+    }
+
+    .composition-table th:not(:first-child) {
+        text-align: right;
+    }
+
+    .composition-table td {
+        padding: 0.5rem;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .composition-table td:first-child {
+        font-weight: 500;
+    }
+
+    .composition-table td:not(:first-child) {
+        text-align: right;
+    }
+
+    .composition-table td:nth-child(4) {
+        font-weight: 600;
+    }
+
+    .composition-table td:last-child {
+        color: #667eea;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 2rem;
+        color: #999;
+        font-style: italic;
+    }
+
+    .last-updated {
+        text-align: center;
+        color: #999;
+        font-size: 0.9rem;
+        margin-top: 2rem;
+        padding-top: 1rem;
+        border-top: 1px solid #e0e0e0;
+    }
+
+    @media (max-width: 768px) {
+        .block-header h1 {
+            font-size: 1.5rem;
+        }
+
+        .section-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="block-xray-container">
+    <!-- Block Header -->
+    <div class="block-header">
+        <h1>{{ block.block }} {{ block.street }}</h1>
+        <p><strong>Town:</strong> {{ block.town }}</p>
+        {% if block.postal_code %}
+        <p><strong>Postal Code:</strong> {{ block.postal_code }}</p>
+        {% endif %}
+    </div>
+
+    <!-- Building Characteristics -->
+    <div class="section-grid">
+        <div class="info-card">
+            <h2>🏢 Building Information</h2>
+            {% if block.year_completed %}
+            <div class="info-row">
+                <span class="info-label">Year Completed</span>
+                <span class="info-value">{{ block.year_completed }}</span>
+            </div>
+            {% endif %}
+            {% if block.building_age %}
+            <div class="info-row">
+                <span class="info-label">Building Age</span>
+                <span class="info-value">{{ block.building_age }} years</span>
+            </div>
+            {% endif %}
+            {% if block.max_floor_lvl %}
+            <div class="info-row">
+                <span class="info-label">Max Floor Level</span>
+                <span class="info-value">{{ block.max_floor_lvl }}</span>
+            </div>
+            {% endif %}
+            {% if block.total_dwelling_units %}
+            <div class="info-row">
+                <span class="info-label">Total Units</span>
+                <span class="info-value">{{ block.total_dwelling_units }}</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="info-card">
+            <h2>📅 Lease Information</h2>
+            {% if block.lease_commence_year %}
+            <div class="info-row">
+                <span class="info-label">Lease Commenced</span>
+                <span class="info-value">{{ block.lease_commence_year }}</span>
+            </div>
+            {% endif %}
+            {% if block.remaining_lease_years is not none %}
+            <div class="info-row">
+                <span class="info-label">Remaining Lease</span>
+                <span class="info-value">{{ block.remaining_lease_years }} years</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Block Facilities -->
+    <div class="info-card">
+        <h2>🏪 Block Facilities</h2>
+        <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;">
+            Facilities integrated into this block
+        </p>
+
+        {% set has_facilities = block.facilities.commercial or block.facilities.market_hawker or
+        block.facilities.multistorey_carpark or block.facilities.precinct_pavilion %}
+
+        {% if has_facilities %}
+        <div class="facility-badges">
+            {% if block.facilities.commercial %}
+            <span class="badge badge-success">🏪 Commercial Space</span>
+            {% endif %}
+            {% if block.facilities.market_hawker %}
+            <span class="badge badge-success">🍜 Hawker Center</span>
+            {% endif %}
+            {% if block.facilities.multistorey_carpark %}
+            <span class="badge badge-success">🚗 Multi-storey Carpark</span>
+            {% endif %}
+            {% if block.facilities.precinct_pavilion %}
+            <span class="badge badge-success">🏛️ Precinct Pavilion</span>
+            {% endif %}
+        </div>
+        {% else %}
+        <div class="badge badge-info">
+            Residential-only block (no integrated facilities)
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Nearby Amenities -->
+    <div class="info-card">
+        <h2>📍 Nearby Amenities (within 500m)</h2>
+        {% if block.nearby_amenities %}
+        <ul class="amenity-list">
+            {% for amenity in block.nearby_amenities %}
+            <li class="amenity-item">
+                <span class="amenity-icon">
+                    {% if amenity.poi_type == 'MRT' %}🚇
+                    {% elif amenity.poi_type == 'LRT' %}🚊
+                    {% elif amenity.poi_type == 'supermarket' %}🏪
+                    {% elif amenity.poi_type == 'clinic' %}🏥
+                    {% elif amenity.poi_type == 'park' %}🌳
+                    {% elif amenity.poi_type == 'mall' %}🏬
+                    {% elif amenity.poi_type == 'hawker' %}🍜
+                    {% elif amenity.poi_type == 'school' %}🏫
+                    {% else %}📍
+                    {% endif %}
+                </span>
+                <div class="amenity-info">
+                    <div class="amenity-name">{{ amenity.name }}</div>
+                    <div class="amenity-type">{{ amenity.poi_type|title }}</div>
+                </div>
+                <span class="amenity-distance">{{ amenity.distance_m|int }}m</span>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <div class="empty-state">
+            No amenities found within 500m
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Unit Composition -->
+    {% if block.unit_composition %}
+    <div class="info-card">
+        <h2>🏠 Unit Composition (Sold + Rental)</h2>
+        <div class="chart-container">
+            <canvas id="unitCompositionChart"></canvas>
+        </div>
+
+        <!-- Breakdown table -->
+        <table class="composition-table">
+            <thead>
+                <tr>
+                    <th>Room Type</th>
+                    <th>Sold</th>
+                    <th>Rental</th>
+                    <th>Total</th>
+                    <th>%</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in block.unit_composition %}
+                <tr>
+                    <td>{{ item.room_type }}</td>
+                    <td>{{ item.sold_units }}</td>
+                    <td>{{ item.rental_units }}</td>
+                    <td>{{ item.total_units }}</td>
+                    <td>{{ item.percentage }}%</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- Last Updated -->
+    <div class="last-updated">
+        Last updated: {{ block.last_updated.strftime('%Y-%m-%d %H:%M:%S') }}
+    </div>
+</div>
+
+{% if block.unit_composition %}
+<script>
+    // Unit Composition Chart
+    const unitCompositionData = {{ block.unit_composition | tojson }};
+
+    const ctx = document.getElementById('unitCompositionChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: unitCompositionData.map(item => item.room_type),
+            datasets: [{
+                label: 'Total Units',
+                data: unitCompositionData.map(item => item.total_units),
+                backgroundColor: [
+                    '#667eea',
+                    '#764ba2',
+                    '#f093fb',
+                    '#4facfe',
+                    '#43e97b',
+                    '#fa709a',
+                    '#fee140',
+                    '#30cfd0'
+                ],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            const item = unitCompositionData[context.dataIndex];
+                            return [
+                                `${item.room_type}: ${item.total_units} units (${item.percentage}%)`,
+                                `Sold: ${item.sold_units}, Rental: ${item.rental_units}`
+                            ];
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endif %}
+{% endblock %}

@@ -17,18 +17,55 @@
   <!-- Fair Value Form -->
   <div class="fair-value-form">
     <h3>Check Fair Value</h3>
-    <form hx-post="/api/fair-value" hx-target="#results-container" hx-swap="innerHTML" hx-indicator="#loading-spinner">
+
+    <!-- Input Mode Tabs -->
+    <div class="input-mode-tabs">
+      <button id="postal-code-tab" class="tab-button active" onclick="switchInputMode('postal-code')">Postal
+        Code</button>
+      <button id="manual-entry-tab" class="tab-button" onclick="switchInputMode('manual-entry')">Manual Entry</button>
+    </div>
+
+    <!-- Postal Code Input Mode (Default Active) -->
+    <div id="postal-code-mode" class="input-mode active">
+      <div class="form-group">
+        <label for="postal_code">Postal Code *</label>
+        <input type="text" id="postal_code" name="postal_code" placeholder="e.g., 650514" maxlength="6"
+          inputmode="numeric" pattern="[0-9]{6}" autocomplete="postal-code" />
+        <span class="input-hint">Enter your 6-digit HDB postal code</span>
+      </div>
+
+      <!-- Lookup Status Messages -->
+      <div id="postal-code-status" class="status-message"></div>
+
+      <!-- Address Display (shows normalized address being used) -->
+      <div id="address-display" class="address-display" style="display:none;">
+        <strong>Using address:</strong> <span id="normalized-address"></span>
+      </div>
+
+      <button type="button" class="btn btn-secondary" onclick="lookupPostalCode()">Lookup Address</button>
+    </div>
+
+    <!-- Manual Entry Mode (Hidden by default) -->
+    <div id="manual-entry-mode" class="input-mode">
       <div class="form-row">
         <div class="form-group">
           <label for="block">Block Number *</label>
-          <input type="text" id="block" name="block" required placeholder="e.g., 123" />
+          <input type="text" id="block" name="block" placeholder="e.g., 123" />
         </div>
 
         <div class="form-group">
           <label for="street">Street Name *</label>
-          <input type="text" id="street" name="street" required placeholder="e.g., ANG MO KIO AVE 3" />
+          <input type="text" id="street" name="street" placeholder="e.g., ANG MO KIO AVE 3" />
         </div>
       </div>
+    </div>
+
+    <!-- Shared Fair Value Form Fields -->
+    <form id="fair-value-form" hx-post="/api/fair-value" hx-target="#results-container" hx-swap="innerHTML"
+      hx-indicator="#loading-spinner">
+      <!-- Hidden fields populated by postal code lookup OR manual entry -->
+      <input type="hidden" id="form_block" name="block" />
+      <input type="hidden" id="form_street" name="street" />
 
       <div class="form-row">
         <div class="form-group">
@@ -44,7 +81,8 @@
 
         <div class="form-group">
           <label for="floor_area_sqm">Floor Area (sqm) *</label>
-          <input type="number" id="floor_area_sqm" name="floor_area_sqm" required min="30" max="300" step="0.1" placeholder="e.g., 90.0" />
+          <input type="number" id="floor_area_sqm" name="floor_area_sqm" required min="30" max="300" step="0.1"
+            placeholder="e.g., 90.0" />
         </div>
       </div>
 
@@ -65,7 +103,7 @@
       </div>
 
       <button type="submit" class="btn btn-primary">Calculate Fair Value</button>
-      
+
       <!-- Loading Spinner -->
       <div id="loading-spinner" class="loading-spinner htmx-indicator">
         <div class="spinner"></div>
@@ -99,4 +137,322 @@
     </div>
   </div>
 </section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Tab switching
+  function switchInputMode(mode) {
+    const postalCodeTab = document.getElementById('postal-code-tab');
+    const manualEntryTab = document.getElementById('manual-entry-tab');
+    const postalCodeMode = document.getElementById('postal-code-mode');
+    const manualEntryMode = document.getElementById('manual-entry-mode');
+
+    if (mode === 'postal-code') {
+      postalCodeTab.classList.add('active');
+      manualEntryTab.classList.remove('active');
+      postalCodeMode.classList.add('active');
+      manualEntryMode.classList.remove('active');
+
+      // Clear status messages when switching
+      document.getElementById('postal-code-status').innerHTML = '';
+      document.getElementById('address-display').style.display = 'none';
+    } else {
+      manualEntryTab.classList.add('active');
+      postalCodeTab.classList.remove('active');
+      manualEntryMode.classList.add('active');
+      postalCodeMode.classList.remove('active');
+
+      // Sync manual entry fields with hidden form fields
+      syncManualEntryToForm();
+    }
+  }
+
+  // Sync manual entry to hidden form fields
+  function syncManualEntryToForm() {
+    const blockInput = document.getElementById('block');
+    const streetInput = document.getElementById('street');
+
+    // Add event listeners to sync on input
+    blockInput.addEventListener('input', function () {
+      document.getElementById('form_block').value = this.value;
+    });
+    streetInput.addEventListener('input', function () {
+      document.getElementById('form_street').value = this.value;
+    });
+
+    // Initial sync
+    document.getElementById('form_block').value = blockInput.value;
+    document.getElementById('form_street').value = streetInput.value;
+  }
+
+  // Initialize manual entry sync
+  document.addEventListener('DOMContentLoaded', function () {
+    syncManualEntryToForm();
+  });
+
+  // Postal code lookup
+  async function lookupPostalCode() {
+    const postalCodeInput = document.getElementById('postal_code');
+    const postalCode = postalCodeInput.value.trim();
+    const statusDiv = document.getElementById('postal-code-status');
+    const addressDisplay = document.getElementById('address-display');
+    const normalizedAddressSpan = document.getElementById('normalized-address');
+
+    // Clear previous status
+    statusDiv.innerHTML = '';
+    addressDisplay.style.display = 'none';
+
+    // Validate postal code
+    if (!postalCode || postalCode.length !== 6 || !/^\d{6}$/.test(postalCode)) {
+      statusDiv.innerHTML = '<div class="error-message">Please enter a valid 6-digit postal code</div>';
+      return;
+    }
+
+    // Show loading state
+    statusDiv.innerHTML = '<div class="info-message">Looking up address...</div>';
+
+    try {
+      const response = await fetch(`/api/block-lookup?postal_code=${postalCode}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        if (data.matches && data.suggestions) {
+          // Multiple matches - show selection UI
+          handleMultipleMatches(data.matches);
+        } else if (data.block && data.street) {
+          // Single match - populate form
+          populateFormWithBlock(data);
+          statusDiv.innerHTML = '<div class="success-message">✓ Address found!</div>';
+        }
+      } else {
+        // Error response
+        if (data.error && data.suggestions && data.suggestions.length > 0) {
+          // Postal code not found but have suggestions
+          handleSuggestions(data.error, data.suggestions);
+        } else {
+          statusDiv.innerHTML = `<div class="error-message">${data.detail || data.error || 'Postal code not found'}</div>`;
+        }
+      }
+    } catch (error) {
+      statusDiv.innerHTML = '<div class="error-message">Failed to lookup postal code. Please try again.</div>';
+      console.error('Postal code lookup error:', error);
+    }
+  }
+
+  // Populate form with block data
+  function populateFormWithBlock(blockData) {
+    // Set hidden form fields
+    document.getElementById('form_block').value = blockData.block;
+    document.getElementById('form_street').value = blockData.street;
+
+    // Show normalized address per user feedback
+    const normalizedAddress = `Block ${blockData.block}, ${blockData.street}, ${blockData.town}`;
+    document.getElementById('normalized-address').textContent = normalizedAddress;
+    document.getElementById('address-display').style.display = 'block';
+
+    // Auto-scroll to form fields
+    document.getElementById('flat_type').focus();
+  }
+
+  // Handle multiple matches
+  function handleMultipleMatches(matches) {
+    const statusDiv = document.getElementById('postal-code-status');
+
+    let html = '<div class="warning-message">Multiple blocks found for this postal code. Please select:</div>';
+    html += '<div class="suggestions-list">';
+
+    matches.forEach((match, index) => {
+      html += `
+        <div class="suggestion-item" onclick="selectBlock(${index}, ${JSON.stringify(match).replace(/"/g, '&quot;')})">
+          <strong>Block ${match.block}</strong> - ${match.street}, ${match.town}
+        </div>
+      `;
+    });
+
+    html += '</div>';
+    statusDiv.innerHTML = html;
+  }
+
+  // Handle suggestions (postal code not found)
+  function handleSuggestions(errorMessage, suggestions) {
+    const statusDiv = document.getElementById('postal-code-status');
+
+    let html = `<div class="error-message">${errorMessage}</div>`;
+
+    if (suggestions.length > 0) {
+      html += '<div class="suggestions-list">';
+      suggestions.forEach((suggestion, index) => {
+        html += `
+          <div class="suggestion-item" onclick="selectBlock(${index}, ${JSON.stringify(suggestion).replace(/"/g, '&quot;')})">
+            <strong>Block ${suggestion.block}</strong> - ${suggestion.street}, ${suggestion.town}
+            ${suggestion.postal_code ? `<span class="postal-code-badge">${suggestion.postal_code}</span>` : ''}
+          </div>
+        `;
+      });
+      html += '</div>';
+    }
+
+    statusDiv.innerHTML = html;
+  }
+
+  // Select a block from suggestions
+  function selectBlock(index, blockData) {
+    populateFormWithBlock(blockData);
+    document.getElementById('postal-code-status').innerHTML = '<div class="success-message">✓ Address selected!</div>';
+  }
+
+  // Allow Enter key to trigger postal code lookup
+  document.getElementById('postal_code').addEventListener('keypress', function (e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      lookupPostalCode();
+    }
+  });
+
+  // Form submission validation
+  document.getElementById('fair-value-form').addEventListener('submit', function (e) {
+    const block = document.getElementById('form_block').value;
+    const street = document.getElementById('form_street').value;
+
+    if (!block || !street) {
+      e.preventDefault();
+      alert('Please lookup your postal code or switch to manual entry to fill in block and street.');
+      return false;
+    }
+  });
+</script>
+
+<style>
+  /* Tab Styles */
+  .input-mode-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid var(--border-color);
+  }
+
+  .tab-button {
+    padding: 0.75rem 1.5rem;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    font-weight: 600;
+    color: var(--text-light);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 1rem;
+  }
+
+  .tab-button.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+  }
+
+  .tab-button:hover {
+    color: var(--primary-color);
+  }
+
+  /* Input Mode Sections */
+  .input-mode {
+    display: none;
+    margin-bottom: 1.5rem;
+  }
+
+  .input-mode.active {
+    display: block;
+  }
+
+  /* Status Messages */
+  .status-message {
+    margin: 1rem 0;
+  }
+
+  .success-message {
+    padding: 0.75rem;
+    background-color: #d1fae5;
+    color: #065f46;
+    border-radius: var(--border-radius);
+    border-left: 4px solid #10b981;
+  }
+
+  .error-message {
+    padding: 0.75rem;
+    background-color: #fee2e2;
+    color: #991b1b;
+    border-radius: var(--border-radius);
+    border-left: 4px solid #ef4444;
+  }
+
+  .warning-message {
+    padding: 0.75rem;
+    background-color: #fef3c7;
+    color: #92400e;
+    border-radius: var(--border-radius);
+    border-left: 4px solid #f59e0b;
+    margin-bottom: 1rem;
+  }
+
+  .info-message {
+    padding: 0.75rem;
+    background-color: #dbeafe;
+    color: #1e40af;
+    border-radius: var(--border-radius);
+    border-left: 4px solid #3b82f6;
+  }
+
+  /* Input Hint */
+  .input-hint {
+    font-size: 0.875rem;
+    color: var(--text-light);
+    margin-top: 0.25rem;
+    display: block;
+  }
+
+  /* Address Display */
+  .address-display {
+    padding: 1rem;
+    background-color: #dbeafe;
+    border-radius: var(--border-radius);
+    margin: 1rem 0;
+    border-left: 4px solid var(--primary-color);
+  }
+
+  .address-display strong {
+    color: var(--primary-color);
+  }
+
+  /* Suggestions List */
+  .suggestions-list {
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .suggestion-item {
+    padding: 1rem;
+    background-color: white;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .suggestion-item:hover {
+    border-color: var(--primary-color);
+    background-color: #f0f9ff;
+    transform: translateX(4px);
+  }
+
+  .postal-code-badge {
+    display: inline-block;
+    margin-left: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    background-color: var(--bg-light);
+    border-radius: 4px;
+    font-size: 0.85rem;
+    color: var(--text-light);
+  }
+</style>
 {% endblock %}

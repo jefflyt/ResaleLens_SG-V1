@@ -12,7 +12,9 @@ from sqlalchemy.orm import Session
 from ..database import SessionLocal
 from ..ingestion.utils import normalize_street_name
 from ..models import IngestionRun, IngestionStatus
+from ..schemas.block_xray import BlockXRayData
 from ..schemas.fair_value import FairValueRequest, FairValueResponse
+from ..services.block_xray import get_block_xray
 from ..services.fair_value import calculate_fair_value
 
 router = APIRouter(prefix="/api", tags=["api"])
@@ -215,3 +217,215 @@ async def calculate_fair_value_api(
             status_code=500,
             detail="Unable to calculate Fair Value. Please try again later.",
         ) from e
+
+
+@router.get("/block-lookup")
+async def block_lookup(
+    postal_code: str, db: Session = Depends(get_db)
+) -> dict:
+    """
+    Lookup HDB block information by postal code.
+
+    This endpoint implements intelligent lookup strategies:
+    1. **Direct match**: Exact postal code lookup in blocks table
+    2. **HDB inference**: For postal codes starting with 6/7, infer block from last 3 digits
+    3. **Sector fallback**: Search within same postal sector (first 2 digits) for suggestions
+
+    Args:
+        postal_code: 6-digit Singapore postal code
+        db: Database session (injected)
+
+    Returns:
+        - Single match: {block, street, town, postal_code, postal_sector}
+        - Multiple matches: {matches: [...], suggestions: true}
+        - No match with suggestions: {error: "...", suggestions: [...]}
+
+    Raises:
+        HTTPException 400: Invalid postal code format
+        HTTPException 404: Postal code not found and no suggestions available
+    """
+    from ..models import Block
+    from ..schemas.postal_code import (
+        BlockLookupErrorResponse,
+        BlockLookupMultipleResponse,
+        BlockLookupResponse,
+        BlockMatch,
+    )
+
+    # Validate postal code format
+    if not postal_code or len(postal_code) != 6 or not postal_code.isdigit():
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid postal code format. Please enter a 6-digit numeric postal code.",
+        )
+
+    # Extract postal sector (first 2 digits)
+    postal_sector = postal_code[:2]
+
+    # Strategy 1: Direct match - exact postal code lookup
+    direct_matches = (
+        db.query(Block)
+        .filter(Block.postal_code == postal_code)
+        .all()
+    )
+
+    if direct_matches:
+        if len(direct_matches) == 1:
+            # Single match - return immediately
+            block = direct_matches[0]
+            return BlockLookupResponse(
+                block=block.block,
+                street=block.street,
+                town=block.town,
+                postal_code=block.postal_code or postal_code,
+                postal_sector=block.postal_sector,
+            ).model_dump()
+        else:
+            # Multiple matches - user needs to select
+            matches = [
+                BlockMatch(
+                    block=b.block,
+                    street=b.street,
+                    town=b.town,
+                    postal_code=b.postal_code or postal_code,
+                    postal_sector=b.postal_sector,
+                )
+                for b in direct_matches
+            ]
+            return BlockLookupMultipleResponse(
+                matches=matches, suggestions=True
+            ).model_dump()
+
+    # Strategy 2: HDB block inference (last 3 digits = block number)
+    # Only for HDB postal codes (starting with 6, 7, or 8)
+    if postal_code.startswith(("6", "7", "8")):
+        inferred_block = postal_code[-3:].lstrip("0") or "0"  # Remove leading zeros
+
+        # Search for block in same postal sector
+        inferred_matches = (
+            db.query(Block)
+            .filter(
+                Block.block == inferred_block,
+                Block.postal_sector == postal_sector,
+            )
+            .all()
+        )
+
+        if inferred_matches:
+            if len(inferred_matches) == 1:
+                block = inferred_matches[0]
+                return BlockLookupResponse(
+                    block=block.block,
+                    street=block.street,
+                    town=block.town,
+                    postal_code=block.postal_code or postal_code,
+                    postal_sector=block.postal_sector,
+                ).model_dump()
+            else:
+                # Multiple inferred matches
+                matches = [
+                    BlockMatch(
+                        block=b.block,
+                        street=b.street,
+                        town=b.town,
+                        postal_code=b.postal_code or postal_code,
+                        postal_sector=b.postal_sector,
+                    )
+                    for b in inferred_matches
+                ]
+                return BlockLookupMultipleResponse(
+                    matches=matches, suggestions=True
+                ).model_dump()
+
+    # Strategy 3: Sector fallback - find blocks in same postal sector
+    sector_blocks = (
+        db.query(Block)
+        .filter(Block.postal_sector == postal_sector)
+        .limit(10)  # Limit to 10 suggestions
+        .all()
+    )
+
+    if sector_blocks:
+        # Return suggestions from same sector
+        suggestions = [
+            BlockMatch(
+                block=b.block,
+                street=b.street,
+                town=b.town,
+                postal_code=b.postal_code or "",
+                postal_sector=b.postal_sector,
+            )
+            for b in sector_blocks
+        ]
+        return BlockLookupErrorResponse(
+            error=(
+                f"Postal code {postal_code} not found. "
+                f"Here are some blocks in the same area (sector {postal_sector}):"
+            ),
+            suggestions=suggestions,
+        ).model_dump()
+
+    # No matches found at all
+    raise HTTPException(
+        status_code=404,
+        detail=(
+            f"Postal code {postal_code} not found in our database. "
+            "Please use manual entry (block + street)."
+        ),
+    )
+
+
+@router.get("/block-xray/{block_id}", response_model=BlockXRayData)
+async def get_block_xray_api(block_id: int, db: Session = Depends(get_db)) -> BlockXRayData:
+    """
+    Get Block X-Ray data including property information.
+
+    Args:
+        block_id: Block ID to query
+        db: Database session
+
+    Returns:
+        BlockXRayData with building characteristics, facilities, and amenities
+
+    Raises:
+        HTTPException 404: Block not found
+    """
+    block_data = get_block_xray(block_id, db)
+
+    if not block_data:
+        raise HTTPException(status_code=404, detail="Block not found")
+
+    return block_data
+
+
+@router.get("/block/{block_id}")
+async def block_xray_page(
+    request: Request, block_id: int, db: Session = Depends(get_db)
+) -> HTMLResponse:
+    """
+    Render Block X-Ray page with property information.
+
+    Args:
+        request: FastAPI request object
+        block_id: Block ID to display
+        db: Database session
+
+    Returns:
+        Rendered template
+
+    Raises:
+        HTTPException 404: Block not found
+    """
+    block_data = get_block_xray(block_id, db)
+
+    if not block_data:
+        raise HTTPException(status_code=404, detail="Block not found")
+
+    return templates.TemplateResponse(
+        "block_xray.html",
+        {
+            "request": request,
+            "block": block_data,
+        },
+    )
+
