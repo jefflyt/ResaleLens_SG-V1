@@ -15,6 +15,7 @@ from ..models import IngestionRun, IngestionStatus
 from ..schemas.block_xray import BlockXRayData
 from ..schemas.fair_value import FairValueRequest, FairValueResponse
 from ..services.block_xray import get_block_xray
+from ..services.data_status import get_data_status
 from ..services.fair_value import calculate_fair_value
 
 router = APIRouter(prefix="/api", tags=["api"])
@@ -429,3 +430,42 @@ async def block_xray_page(
         },
     )
 
+
+@router.get("/data-status")
+async def data_status_page(
+    request: Request, db: Session = Depends(get_db)
+) -> HTMLResponse:
+    """
+    Render Data Status page showing dataset freshness and ingestion health.
+
+    Args:
+        request: FastAPI request object
+        db: Database session
+
+    Returns:
+        Rendered template with dataset status information
+    """
+    datasets = get_data_status(db)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="data_status.html",
+        context={
+            "request": request,
+            "datasets": datasets,
+        },
+    )
+
+
+@router.get("/api/data-status")
+async def data_status_json(
+    db: Session = Depends(get_db)
+) -> dict:
+    """
+    Get data status as JSON for all tracked datasets.
+
+    Returns:
+        Dictionary with 'datasets' key containing list of DatasetStatus objects
+    """
+    datasets = get_data_status(db)
+    return {"datasets": [d.model_dump() for d in datasets]}

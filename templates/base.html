@@ -1,18 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}ResaleLens SG{% endblock %}</title>
-    
+
     <!-- HTMX -->
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-    
+
     <!-- Styles -->
     <link rel="stylesheet" href="/static/styles.css">
-    
+
     {% block extra_head %}{% endblock %}
 </head>
+
 <body>
     <header>
         <nav class="container">
@@ -26,15 +28,17 @@
             </ul>
         </nav>
     </header>
-    
+
     <main class="container">
         {% block content %}{% endblock %}
     </main>
-    
+
     <footer class="container">
-        <p>&copy; 2026 ResaleLens SG. Built for Singapore's HDB community.</p>
+        <p>&copy; 2026 ResaleLens SG. Built for Singapore's HDB community. | <a href="/data-status"
+                style="color: #667eea; text-decoration: none;">Data Status</a></p>
     </footer>
-    
+
     {% block scripts %}{% endblock %}
 </body>
+
 </html>

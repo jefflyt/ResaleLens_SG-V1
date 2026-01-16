@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+
+{% block title %}Data Status - ResaleLens SG{% endblock %}
+
+{% block extra_head %}
+<style>
+    .data-status-container {
+        max-width: 1200px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+
+    .status-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+    }
+
+    .status-header h1 {
+        margin: 0 0 0.5rem 0;
+        font-size: 2rem;
+    }
+
+    .status-header p {
+        margin: 0.25rem 0;
+        opacity: 0.9;
+    }
+
+    .delayed-banner {
+        background: #fff3cd;
+        border: 1px solid #ffc107;
+        border-radius: 8px;
+        padding: 1rem 1.5rem;
+        margin-bottom: 2rem;
+        color: #856404;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .delayed-banner::before {
+        content: "⚠️";
+        font-size: 1.5rem;
+    }
+
+    .status-table {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th {
+        background: #f8f9fa;
+        padding: 1rem;
+        text-align: left;
+        font-weight: 600;
+        color: #666;
+        border-bottom: 2px solid #e0e0e0;
+    }
+
+    td {
+        padding: 1rem;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    tr:last-child td {
+        border-bottom: none;
+    }
+
+    tr:hover {
+        background: #f8f9fa;
+    }
+
+    .badge {
+        display: inline-block;
+        padding: 0.4rem 0.8rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+
+    .badge-healthy {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .badge-delayed {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .badge-failed {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .badge-never {
+        background: #e2e3e5;
+        color: #6c757d;
+    }
+
+    .badge-in-progress {
+        background: #d1ecf1;
+        color: #0c5460;
+    }
+
+    .timestamp {
+        color: #666;
+        font-size: 0.9rem;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: #999;
+    }
+
+    .info-note {
+        background: #e7f3ff;
+        border-left: 4px solid #2196F3;
+        padding: 1rem;
+        margin-top: 2rem;
+        border-radius: 4px;
+        color: #0c5460;
+        font-size: 0.9rem;
+    }
+
+    @media (max-width: 768px) {
+        .status-header h1 {
+            font-size: 1.5rem;
+        }
+
+        table {
+            font-size: 0.9rem;
+        }
+
+        th,
+        td {
+            padding: 0.75rem 0.5rem;
+        }
+
+        /* Make table scrollable on mobile */
+        .status-table {
+            overflow-x: auto;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="data-status-container">
+    <!-- Page Header -->
+    <div class="status-header">
+        <h1>📊 Data Status</h1>
+        <p>Transparency into dataset freshness and ingestion health</p>
+        <p>Last checked: {{ datasets[0].last_ingest.strftime('%Y-%m-%d %H:%M:%S') if datasets and
+            datasets[0].last_ingest else 'N/A' }} SGT</p>
+    </div>
+
+    <!-- Delayed Banner (if any dataset is delayed) -->
+    {% set has_delayed = datasets | selectattr('status', 'equalto', 'delayed') | list | length > 0 %}
+    {% if has_delayed %}
+    <div class="delayed-banner">
+        <div>
+            <strong>Data Delayed:</strong> Some datasets have not been updated recently.
+            Please check the table below for details.
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Data Status Table -->
+    {% if datasets %}
+    <div class="status-table">
+        <table>
+            <thead>
+                <tr>
+                    <th>Dataset</th>
+                    <th>Source</th>
+                    <th>Last Ingest</th>
+                    <th>Next Ingest</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for dataset in datasets %}
+                <tr>
+                    <td><strong>{{ dataset.dataset_name }}</strong></td>
+                    <td>{{ dataset.source }}</td>
+                    <td class="timestamp">
+                        {% if dataset.last_ingest %}
+                        {{ dataset.last_ingest.strftime('%Y-%m-%d %H:%M:%S') }}
+                        {% else %}
+                        <em>Never</em>
+                        {% endif %}
+                    </td>
+                    <td>{{ dataset.next_ingest }}</td>
+                    <td>
+                        {% if dataset.status == 'healthy' %}
+                        <span class="badge badge-healthy">✓ {{ dataset.status_label }}</span>
+                        {% elif dataset.status == 'delayed' %}
+                        <span class="badge badge-delayed">⏱ {{ dataset.status_label }}</span>
+                        {% elif dataset.status == 'failed' %}
+                        <span class="badge badge-failed">✗ {{ dataset.status_label }}</span>
+                        {% elif dataset.status == 'in_progress' %}
+                        <span class="badge badge-in-progress">⟳ {{ dataset.status_label }}</span>
+                        {% else %}
+                        <span class="badge badge-never">○ {{ dataset.status_label }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="status-table">
+        <div class="empty-state">
+            <p><strong>No dataset information available</strong></p>
+            <p>Ingestion processes have not yet been run.</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Info Note -->
+    <div class="info-note">
+        <strong>ℹ️ About Data Status:</strong> This page shows the health and freshness of our datasets.
+        "Healthy" datasets have been updated within their expected schedule. "Delayed" datasets have not
+        been updated recently and may impact feature accuracy. Ingestion processes run automatically on the
+        schedules shown above.
+    </div>
+</div>
+{% endblock %}
