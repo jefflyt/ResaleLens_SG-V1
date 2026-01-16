@@ -1,22 +1,21 @@
-"""POI ingestion from OneMap API."""
+"""[DEPRECATED] POI ingestion from OneMap API - use alternative data source."""
 
 from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
-# NOTE: OneMap API client removed - POI ingestion still uses external API but is separate from postal codes
-from ..models import POI, POIType
-from .utils import log_ingestion_run
-
 
 def ingest_pois(session: Session) -> dict[str, int]:
     """
-    Ingest Points of Interest (POIs) from OneMap.
+    [DEPRECATED] Ingest Points of Interest (POIs) from OneMap.
 
-    Categories:
+    This function has been deprecated because the OneMap API client
+    was removed. Use an alternative data source for POI ingestion.
+
+    Categories that were supported:
     - Transport: MRT, LRT
     - Education: Primary Schools, Secondary Schools
-    - Amenities: Supermarkets (NTUC, Sheng Siong, Cold Storage, Giant, Prime, Don Don Donki, etc.)
+    - Amenities: Supermarkets
     - Food: Hawker Centres, Food Centres, Markets
     - Shopping: Malls, Shopping Centres, Plazas
     - Healthcare: Clinics, Polyclinics
@@ -27,127 +26,12 @@ def ingest_pois(session: Session) -> dict[str, int]:
 
     Returns:
         Summary of ingestion
+
+    Raises:
+        NotImplementedError: This function is deprecated
     """
-    # NOTE: POI ingestion temporarily disabled - OneMap client removed
-    # client = OneMapClient()
-    raise NotImplementedError("POI ingestion requires OneMap API client which has been removed. Use alternative data source.")
+    raise NotImplementedError(
+        "ingest_pois() is deprecated. OneMap API client has been removed. "
+        "Use an alternative data source for POI ingestion."
+    )
 
-    summary = {
-        "total_found": 0,
-        "inserted": 0,
-        "duplicates": 0,
-        "errors": 0,
-    }
-
-    # Define categories to search
-    categories = [
-        # Transport
-        {"query": "MRT STATION", "type": POIType.MRT},
-        {"query": "LRT STATION", "type": POIType.LRT},
-        # Education
-        {"query": "PRIMARY SCHOOL", "type": POIType.SCHOOL},
-        {"query": "SECONDARY SCHOOL", "type": POIType.SCHOOL},
-        # Supermarkets - Major chains
-        {"query": "NTUC", "type": POIType.SUPERMARKET},
-        {"query": "FAIRPRICE", "type": POIType.SUPERMARKET},
-        {"query": "SHENG SIONG", "type": POIType.SUPERMARKET},
-        {"query": "COLD STORAGE", "type": POIType.SUPERMARKET},
-        {"query": "GIANT", "type": POIType.SUPERMARKET},
-        {"query": "PRIME SUPERMARKET", "type": POIType.SUPERMARKET},
-        {"query": "DON DON DONKI", "type": POIType.SUPERMARKET},
-        {"query": "U STARS", "type": POIType.SUPERMARKET},
-        {"query": "MARKETPLACE", "type": POIType.SUPERMARKET},
-        # Hawker Centres & Food Courts
-        {"query": "HAWKER CENTRE", "type": POIType.HAWKER},
-        {"query": "FOOD CENTRE", "type": POIType.HAWKER},
-        {"query": "MARKET AND FOOD CENTRE", "type": POIType.HAWKER},
-        {"query": "MARKET & FOOD CENTRE", "type": POIType.HAWKER},
-        # Shopping Malls - Broader terms
-        {"query": "SHOPPING CENTRE", "type": POIType.MALL},
-        {"query": "PLAZA", "type": POIType.MALL},
-        {"query": "MALL", "type": POIType.MALL},
-        # Clinics
-        {"query": "CLINIC", "type": POIType.CLINIC},
-        {"query": "POLYCLINIC", "type": POIType.CLINIC},
-        # Parks - Specific to avoid noise
-        {"query": "PARK CONNECTOR", "type": POIType.PARK},
-        {"query": "NEIGHBOURHOOD PARK", "type": POIType.PARK},
-    ]
-
-    with log_ingestion_run(session, "onemap_pois") as run:
-        print("Starting POI ingestion...")
-
-        for category in categories:
-            query = category["query"]
-            poi_type = category["type"]
-            print(f"Searching for {query} ({poi_type})...")
-
-            page = 1
-            total_category_found = 0
-
-            while True:
-                try:
-                    results = client.search(query, return_geom=True, pageNum=page)
-                    if not results:
-                        break
-
-                    batch_count = len(results)
-                    total_category_found += batch_count
-                    summary["total_found"] += batch_count
-
-                    for result in results:
-                        name = result.get("SEARCHVAL", "").strip()
-                        lat_str = result.get("LATITUDE")
-                        lon_str = result.get("LONGITUDE")
-
-                        if not name or not lat_str or not lon_str:
-                            continue
-
-                        try:
-                            lat = float(lat_str)
-                            lon = float(lon_str)
-                        except ValueError:
-                            continue
-
-                        # Check for existence
-                        existing = (
-                            session.query(POI)
-                            .filter(POI.name == name, POI.poi_type == poi_type)
-                            .first()
-                        )
-
-                        if existing:
-                            summary["duplicates"] += 1
-                            continue
-
-                        # Create new POI
-                        poi = POI(
-                            name=name,
-                            latitude=lat,
-                            longitude=lon,
-                            poi_type=poi_type,
-                        )
-                        session.add(poi)
-                        summary["inserted"] += 1
-
-                    # Commit batch
-                    session.commit()
-
-                    # Log progress every few pages or just at end?
-                    # OneMap is slow, 10 items per page.
-                    # e.g. 15 pages for MRTs.
-                    print(f"  Page {page}: Found {batch_count} items")
-
-                    page += 1
-
-                except Exception as e:
-                    print(f"Error processing page {page} for {query}: {e}")
-                    summary["errors"] += 1
-                    break
-
-            print(f"Category complete: Found {total_category_found} total for {query}")
-
-        run.rows_processed = summary["inserted"]
-        print(f"POI Ingestion Complete: {summary}")
-
-    return summary

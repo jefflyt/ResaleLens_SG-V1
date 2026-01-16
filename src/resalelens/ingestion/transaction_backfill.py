@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from .utils import log_ingestion_run
 
 
-def ingest_transaction_backfill(session: Session) -> dict[str, int]:
+def ingest_transaction_backfill(session: Session) -> dict[str, int | float]:
     """
     Backfill block_id, latitude, and longitude for transactions.
 
@@ -111,7 +111,7 @@ def ingest_transaction_backfill(session: Session) -> dict[str, int]:
             print("\n✅ All transactions successfully matched to blocks!")
 
         # Update ingestion run summary
-        run.rows_processed = summary["matched"]
+        run.rows_processed = int(summary["matched"])
 
         print(f"Transaction backfill complete: {summary}")
 

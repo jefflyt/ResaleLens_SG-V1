@@ -32,6 +32,21 @@ class UnitCompositionItem(BaseModel):
     percentage: float
 
 
+class TrendDataPoint(BaseModel):
+    """Transaction trend data point for a specific quarter."""
+
+    quarter: str  # Format: "Q1 2023", "Q2 2024", etc.
+    median_psm: float  # Median price per square meter for the quarter
+
+
+class VolatilityInfo(BaseModel):
+    """Price volatility information."""
+
+    std_dev: float  # Standard deviation of PSM
+    classification: str  # "low", "medium", "high"
+    label: str  # "Stable Market", "Moderate Fluctuation", "High Volatility"
+
+
 class BlockXRayData(BaseModel):
     """Complete Block X-Ray data response."""
 
@@ -58,6 +73,10 @@ class BlockXRayData(BaseModel):
 
     # Unit composition (sold + rental units)
     unit_composition: list[UnitCompositionItem]
+
+    # Transaction analytics (past 2 years)
+    transaction_trends: list[TrendDataPoint]
+    volatility: VolatilityInfo | None
 
     # Metadata
     last_updated: datetime

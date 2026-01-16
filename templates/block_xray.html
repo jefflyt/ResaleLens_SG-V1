@@ -95,6 +95,20 @@
         color: #0c5460;
     }
 
+    .badge-warning {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .badge-danger {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .volatility-badge-container {
+        margin-top: 1rem;
+    }
+
     .amenity-list {
         list-style: none;
         padding: 0;
@@ -251,6 +265,25 @@
             {% endif %}
         </div>
 
+        <!-- Volatility Badge (if available) -->
+        {% if block.volatility %}
+        <div class="info-card">
+            <h2>📊 Price Stability</h2>
+            <div class="volatility-badge-container">
+                {% if block.volatility.classification == 'low' %}
+                <span class="badge badge-success">✓ {{ block.volatility.label }}</span>
+                {% elif block.volatility.classification == 'medium' %}
+                <span class="badge badge-warning">⚠ {{ block.volatility.label }}</span>
+                {% else %}
+                <span class="badge badge-danger">⚡ {{ block.volatility.label }}</span>
+                {% endif %}
+                <p style="margin-top: 0.5rem; color: #666; font-size: 0.9rem;">
+                    Based on transaction price variability over the past 2 years
+                </p>
+            </div>
+        </div>
+        {% endif %}
+
         <div class="info-card">
             <h2>📅 Lease Information</h2>
             {% if block.lease_commence_year %}
@@ -299,6 +332,26 @@
         </div>
         {% endif %}
     </div>
+
+    <!-- Transaction Trends (Past 2 Years) -->
+    {% if block.transaction_trends %}
+    <div class="info-card">
+        <h2>📈 Transaction Trends (Past 2 Years)</h2>
+        <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;">
+            Quarterly median price per square meter (PSM) trend
+        </p>
+        <div style="position: relative; height: 300px;">
+            <canvas id="trendChart"></canvas>
+        </div>
+    </div>
+    {% else %}
+    <div class="info-card">
+        <h2>📈 Transaction Trends</h2>
+        <div class="empty-state">
+            <p>Insufficient transaction data (fewer than 5 transactions in past 2 years)</p>
+        </div>
+    </div>
+    {% endif %}
 
     <!-- Nearby Amenities -->
     <div class="info-card">
@@ -424,4 +477,75 @@
     });
 </script>
 {% endif %}
+
+{% if block.transaction_trends %}
+<script>
+    // Transaction Trends Chart
+    const trendData = {{ block.transaction_trends | tojson }};
+
+    const trendCtx = document.getElementById('trendChart').getContext('2d');
+    new Chart(trendCtx, {
+        type: 'line',
+        data: {
+            labels: trendData.map(d => d.quarter),
+            datasets: [{
+                label: 'Median PSM (SGD)',
+                data: trendData.map(d => d.median_psm),
+                borderColor: '#667eea',
+                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                tension: 0.3,
+                fill: true,
+                borderWidth: 3,
+                pointRadius: 4,
+                pointBackgroundColor: '#667eea',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointHoverRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    callbacks: {
+                        label: function (context) {
+                            return `PSM: SGD ${context.parsed.y.toLocaleString()}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    display: true,
+                    title: {
+                        display: true,
+                        text: 'Quarter'
+                    }
+                },
+                y: {
+                    display: true,
+                    title: {
+                        display: true,
+                        text: 'Price per SQM (SGD)'
+                    },
+                    beginAtZero: false,
+                    ticks: {
+                        callback: function (value) {
+                            return 'SGD ' + value.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endif %}
+
 {% endblock %}

@@ -1,15 +1,17 @@
 """Block X-Ray service for property information features."""
 
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.orm import Session
 
-from ..models import POI, Block, BlockPOI
+from ..models import POI, Block, BlockPOI, Transaction
 from ..schemas.block_xray import (
     BlockFacilities,
     BlockXRayData,
     POIDistance,
+    TrendDataPoint,
     UnitCompositionItem,
+    VolatilityInfo,
 )
 
 
@@ -121,6 +123,155 @@ def get_unit_composition(block: Block) -> list[UnitCompositionItem]:
     return unit_composition
 
 
+def get_transaction_trends(
+    block_id: int, session: Session
+) -> list[TrendDataPoint]:
+    """
+    Get transaction trend data (quarterly median PSM over past 2 years).
+
+    Args:
+        block_id: Block ID to query
+        session: Database session
+
+    Returns:
+        List of TrendDataPoint sorted by date (oldest to newest)
+        Empty list if fewer than 5 transactions
+    """
+    # Get block info to filter transactions
+    block = session.query(Block).filter(Block.id == block_id).first()
+    if not block:
+        return []
+
+    # Query transactions for past 2 years
+    two_years_ago = datetime.now(UTC) - timedelta(days=730)
+    transactions = (
+        session.query(Transaction)
+        .filter(
+            Transaction.block == block.block,
+            Transaction.street == block.street,
+            Transaction.date >= two_years_ago.date(),
+        )
+        .all()
+    )
+
+    # Return empty if insufficient data
+    if len(transactions) < 5:
+        return []
+
+    # Group by quarter and calculate median PSM
+    import statistics
+    from collections import defaultdict
+
+    quarterly_data: dict[str, list[float]] = defaultdict(list)
+
+    for txn in transactions:
+        # Calculate PSM (price per square meter)
+        psm = txn.price / txn.floor_area_sqm if txn.floor_area_sqm > 0 else 0
+        if psm == 0:
+            continue
+
+        # Determine quarter
+        year = txn.date.year
+        quarter = (txn.date.month - 1) // 3 + 1
+        quarter_key = f"Q{quarter} {year}"
+
+        quarterly_data[quarter_key].append(psm)
+
+    # Calculate median for each quarter with data
+    trends: list[TrendDataPoint] = []
+    for quarter_key in sorted(
+        quarterly_data.keys(),
+        key=lambda q: (
+            int(q.split()[1]),  # Year
+            int(q.split()[0][1]),  # Quarter number
+        ),
+    ):
+        psm_values = quarterly_data[quarter_key]
+        if psm_values:
+            median_psm = statistics.median(psm_values)
+            trends.append(
+                TrendDataPoint(quarter=quarter_key, median_psm=round(median_psm, 2))
+            )
+
+    return trends
+
+
+def calculate_volatility(
+    block_id: int, session: Session
+) -> VolatilityInfo | None:
+    """
+    Calculate price volatility based on std dev of PSM over past 2 years.
+
+    Volatility is classified using coefficient of variation (CV):
+    - Low: CV < 10% (Stable Market)
+    - Medium: 10% <= CV < 20% (Moderate Fluctuation)
+    - High: CV >= 20% (High Volatility)
+
+    Args:
+        block_id: Block ID to query
+        session: Database session
+
+    Returns:
+        VolatilityInfo or None if insufficient data (<5 transactions)
+    """
+    # Get block info
+    block = session.query(Block).filter(Block.id == block_id).first()
+    if not block:
+        return None
+
+    # Query transactions for past 2 years
+    two_years_ago = datetime.now(UTC) - timedelta(days=730)
+    transactions = (
+        session.query(Transaction)
+        .filter(
+            Transaction.block == block.block,
+            Transaction.street == block.street,
+            Transaction.date >= two_years_ago.date(),
+        )
+        .all()
+    )
+
+    # Return None if insufficient data
+    if len(transactions) < 5:
+        return None
+
+    # Calculate PSM for all transactions
+    import statistics
+
+    psm_values = [
+        txn.price / txn.floor_area_sqm
+        for txn in transactions
+        if txn.floor_area_sqm > 0
+    ]
+
+    if len(psm_values) < 5:
+        return None
+
+    # Calculate std dev and mean
+    std_dev = statistics.stdev(psm_values)
+    mean_psm = statistics.mean(psm_values)
+
+    # Calculate coefficient of variation (CV) as percentage
+    cv = (std_dev / mean_psm * 100) if mean_psm > 0 else 0
+
+    # Classify volatility
+    if cv < 10:
+        classification = "low"
+        label = "Stable Market"
+    elif cv < 20:
+        classification = "medium"
+        label = "Moderate Fluctuation"
+    else:
+        classification = "high"
+        label = "High Volatility"
+
+    return VolatilityInfo(
+        std_dev=round(std_dev, 2),
+        classification=classification,
+        label=label,
+    )
+
+
 def get_block_xray(block_id: int, session: Session) -> BlockXRayData | None:
     """
     Get comprehensive Block X-Ray data including property information.
@@ -147,6 +298,10 @@ def get_block_xray(block_id: int, session: Session) -> BlockXRayData | None:
     # Get unit composition
     unit_composition = get_unit_composition(block)
 
+    # Get transaction analytics
+    transaction_trends = get_transaction_trends(block_id, session)
+    volatility = calculate_volatility(block_id, session)
+
     # Build facilities object
     facilities = BlockFacilities(
         commercial=block.commercial or False,
@@ -170,5 +325,7 @@ def get_block_xray(block_id: int, session: Session) -> BlockXRayData | None:
         facilities=facilities,
         nearby_amenities=nearby_amenities,
         unit_composition=unit_composition,
+        transaction_trends=transaction_trends,
+        volatility=volatility,
         last_updated=block.last_updated,
     )

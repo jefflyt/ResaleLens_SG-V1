@@ -11,11 +11,10 @@ Strategy:
 
 from __future__ import annotations
 
-import time
 from datetime import datetime
 
+from sqlalchemy import inspect, select
 from sqlalchemy.orm import Session
-from sqlalchemy import select
 
 from ..ingestion.utils import log_ingestion_run
 from ..models import Block
@@ -101,7 +100,7 @@ def ingest_hdb_postal_codes(
             update_batch_size = 1000
             for i in range(0, len(updates), update_batch_size):
                 batch = updates[i:i+update_batch_size]
-                session.bulk_update_mappings(Block, batch)
+                session.bulk_update_mappings(inspect(Block), batch)  # type: ignore[arg-type]
                 session.commit()
                 print(f"  ✓ Processed batch {i//update_batch_size + 1}/{(len(updates) + update_batch_size - 1)//update_batch_size}")
             

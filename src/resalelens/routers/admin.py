@@ -1,6 +1,7 @@
 """Admin API endpoints for manual data ingestion triggers and monitoring."""
 
 from collections.abc import Generator
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
@@ -36,7 +37,7 @@ async def trigger_ingestion(
         False, description="If True, only fetch new records since last run (for hdb_transactions)"
     ),
     db: Session = Depends(get_db),
-) -> dict[str, dict[str, int] | str]:
+) -> dict[str, Any]:
     """
     Manually trigger data ingestion for a specific dataset.
 
@@ -55,7 +56,7 @@ async def trigger_ingestion(
     try:
         if dataset == "hdb_transactions":
             print(f"Triggering HDB transactions ingestion (incremental={incremental})...")
-            summary = ingest_hdb_transactions(db, incremental=incremental)
+            summary: Any = ingest_hdb_transactions(db, incremental=incremental)
             return {
                 "status": "success",
                 "dataset": dataset,
