@@ -55,12 +55,12 @@ def ingest_transaction_backfill(session: Session) -> dict[str, int | float]:
         print("\nRunning backfill UPDATE query...")
         backfill_sql = """
             UPDATE transactions t
-            SET 
+            SET
                 block_id = b.id,
                 latitude = b.latitude,
                 longitude = b.longitude
             FROM blocks b
-            WHERE t.block = b.block 
+            WHERE t.block = b.block
             AND t.street = b.street
             AND t.block_id IS NULL
         """

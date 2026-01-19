@@ -78,4 +78,3 @@ class FairValueResponse(BaseModel):
     comp_count: int = Field(..., description="Number of comps used in calculation")
     explainability: Explainability = Field(..., description="Explainability details")
     comps: list[Comp] = Field(..., description="List of comparable transactions")
-

@@ -80,4 +80,3 @@ class BlockXRayData(BaseModel):
 
     # Metadata
     last_updated: datetime | None
-

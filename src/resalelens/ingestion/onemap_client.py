@@ -24,37 +24,37 @@ class OneMapClient:
         """
         results = []
         page = 1
-        
+
         while True:
             params = {
                 "searchVal": search_term,
                 "returnGeom": "Y",
                 "getAddrDetails": "Y",
-                "pageNum": page
+                "pageNum": page,
             }
-            
+
             try:
                 with httpx.Client() as client:
                     response = client.get(self.BASE_URL, params=params)
                     response.raise_for_status()
                     data = response.json()
-                    
+
                     found = data.get("results", [])
                     if not found:
                         break
-                        
+
                     results.extend(found)
-                    
+
                     # OneMap pagination logic: check total pages
                     total_pages = data.get("totalNumPages", 0)
                     if page >= total_pages:
                         break
-                        
+
                     page += 1
-                    time.sleep(0.2) # Politeness
-                    
+                    time.sleep(0.2)  # Politeness
+
             except Exception as e:
                 print(f"Search failed for '{search_term}' page {page}: {e}")
                 break
-                
+
         return results

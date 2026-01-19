@@ -1,6 +1,5 @@
 """Unit tests for Block X-Ray service - Transaction Analytics."""
 
-import pytest
 from datetime import UTC, datetime, timedelta
 
 from resalelens.models import Block, Transaction

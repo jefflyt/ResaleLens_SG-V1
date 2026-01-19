@@ -7,7 +7,6 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
-from ..data.repositories import BlockRepository
 from ..models import Block
 from .utils import fetch_json_with_retry, log_ingestion_run, normalize_street_name
 
@@ -182,12 +181,14 @@ def ingest_hdb_property_info(session: Session) -> dict[str, int]:
         # Perform bulk update in batches
         if updates:
             skipped = summary["matched"] - len(updates)
-            print(f"\nPerforming bulk update of {len(updates)} changed blocks (skipped {skipped} unchanged)...")
+            print(
+                f"\nPerforming bulk update of {len(updates)} changed blocks (skipped {skipped} unchanged)..."
+            )
             batch_size = 1000
             total_updates = len(updates)
 
             for i in range(0, total_updates, batch_size):
-                batch = updates[i:i+batch_size]
+                batch = updates[i : i + batch_size]
                 session.bulk_update_mappings(Block, batch)
                 session.commit()
 
@@ -195,7 +196,9 @@ def ingest_hdb_property_info(session: Session) -> dict[str, int]:
                 processed = min(i + batch_size, total_updates)
                 print(f"  ✓ Updated {processed}/{total_updates} blocks...")
 
-            print(f"Bulk update complete: {total_updates} blocks updated, {skipped} skipped (no changes)")
+            print(
+                f"Bulk update complete: {total_updates} blocks updated, {skipped} skipped (no changes)"
+            )
         else:
             print("\n✅ No changes detected - all blocks are up to date!")
             # Final commit if no updates

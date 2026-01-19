@@ -128,7 +128,9 @@ def ingest_hdb_transactions(session: Session, incremental: bool = False) -> dict
 
                         # Incremental sync: stop fetching if we hit older records
                         if since_date and date_obj.date() <= since_date:
-                            print(f"Reached existing data ({date_obj.date()} <= {since_date}). Stopping incremental sync.")
+                            print(
+                                f"Reached existing data ({date_obj.date()} <= {since_date}). Stopping incremental sync."
+                            )
                             has_more = False
                             break
 
@@ -226,7 +228,7 @@ def ingest_hdb_transactions(session: Session, incremental: bool = False) -> dict
 
                 # Check if there are more records
                 offset += limit  # type: ignore[assignment,operator]
-                
+
                 # Only check total_records if we haven't already decided to stop
                 if has_more:
                     has_more = offset < total_records  # type: ignore[operator]

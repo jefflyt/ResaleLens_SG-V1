@@ -1,7 +1,6 @@
 """Unit tests for Data Status service."""
 
-import pytest
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from resalelens.models import IngestionRun, IngestionStatus
 from resalelens.services.data_status import get_data_status
@@ -13,8 +12,14 @@ class TestDataStatus:
     def test_get_data_status_all_healthy(self, db_session):
         """Verify all datasets show 'healthy' status when recently ingested."""
         # Create recent successful runs for all datasets (within last 24 hours)
-        now = datetime.now(timezone.utc)
-        datasets = ["hdb_transactions", "hdb_postal_codes", "hdb_property_info", "pois", "block_pois"]
+        now = datetime.now(UTC)
+        datasets = [
+            "hdb_transactions",
+            "hdb_postal_codes",
+            "hdb_property_info",
+            "pois",
+            "block_pois",
+        ]
 
         for dataset_name in datasets:
             run = IngestionRun(
@@ -41,7 +46,7 @@ class TestDataStatus:
     def test_get_data_status_delayed(self, db_session):
         """Verify 'delayed' status when transaction dataset is >48h stale."""
         # Create old successful run for hdb_transactions (3 days ago)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         old_run = IngestionRun(
             dataset_name="hdb_transactions",
             started_at=now - timedelta(days=3),
@@ -66,7 +71,7 @@ class TestDataStatus:
     def test_get_data_status_failed(self, db_session):
         """Verify 'failed' status when latest run has status='failed'."""
         # Create failed run for hdb_postal_codes
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         failed_run = IngestionRun(
             dataset_name="hdb_postal_codes",
             started_at=now - timedelta(hours=1),
@@ -92,7 +97,7 @@ class TestDataStatus:
         """Verify service returns all tracked datasets regardless of run history."""
         # Note: Can't clean up all runs due to foreign key constraints with transactions
         # Instead, verify the service returns all 5 tracked datasets
-        
+
         # Get data status
         statuses = get_data_status(db_session)
 
@@ -107,7 +112,7 @@ class TestDataStatus:
 
     def test_freshness_calculation_transactions(self, db_session):
         """Verify 48-hour threshold logic for transactions dataset."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Test exactly at threshold (48 hours) - should be healthy (not delayed yet)
         run_at_threshold = IngestionRun(
@@ -148,7 +153,7 @@ class TestDataStatus:
 
     def test_freshness_calculation_monthly_datasets(self, db_session):
         """Verify 30-day threshold logic for monthly datasets (pois, blocks, property_info)."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Create run for POIs 20 days ago - should be healthy (threshold is 30 days)
         recent_run = IngestionRun(
@@ -187,7 +192,7 @@ class TestDataStatus:
 
     def test_in_progress_status(self, db_session):
         """Verify 'in_progress' status when run is currently running."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Create in-progress run
         in_progress_run = IngestionRun(

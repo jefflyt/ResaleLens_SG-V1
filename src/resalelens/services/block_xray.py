@@ -123,9 +123,7 @@ def get_unit_composition(block: Block) -> list[UnitCompositionItem]:
     return unit_composition
 
 
-def get_transaction_trends(
-    block_id: int, session: Session
-) -> list[TrendDataPoint]:
+def get_transaction_trends(block_id: int, session: Session) -> list[TrendDataPoint]:
     """
     Get transaction trend data (quarterly median PSM over past 2 years).
 
@@ -189,16 +187,12 @@ def get_transaction_trends(
         psm_values = quarterly_data[quarter_key]
         if psm_values:
             median_psm = statistics.median(psm_values)
-            trends.append(
-                TrendDataPoint(quarter=quarter_key, median_psm=round(median_psm, 2))
-            )
+            trends.append(TrendDataPoint(quarter=quarter_key, median_psm=round(median_psm, 2)))
 
     return trends
 
 
-def calculate_volatility(
-    block_id: int, session: Session
-) -> VolatilityInfo | None:
+def calculate_volatility(block_id: int, session: Session) -> VolatilityInfo | None:
     """
     Calculate price volatility based on std dev of PSM over past 2 years.
 
@@ -238,11 +232,7 @@ def calculate_volatility(
     # Calculate PSM for all transactions
     import statistics
 
-    psm_values = [
-        txn.price / txn.floor_area_sqm
-        for txn in transactions
-        if txn.floor_area_sqm > 0
-    ]
+    psm_values = [txn.price / txn.floor_area_sqm for txn in transactions if txn.floor_area_sqm > 0]
 
     if len(psm_values) < 5:
         return None

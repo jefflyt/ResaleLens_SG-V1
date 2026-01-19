@@ -133,11 +133,13 @@ def ingest_block_pois(
 
                 if dist <= max_distance_m:
                     # Collect record instead of upserting immediately
-                    all_distance_records.append({
-                        "block_id": block.id,
-                        "poi_id": poi["id"],
-                        "distance_m": dist,
-                    })
+                    all_distance_records.append(
+                        {
+                            "block_id": block.id,
+                            "poi_id": poi["id"],
+                            "distance_m": dist,
+                        }
+                    )
 
             summary["blocks_processed"] += 1
 
@@ -147,24 +149,24 @@ def ingest_block_pois(
 
         # 4. Perform batched bulk upsert for ALL records
         print(f"Upserting {len(all_distance_records)} distance records in batches...")
-        
+
         if all_distance_records:
             # Process in smaller batches with intermediate commits to avoid timeout
             batch_size = 5000
             total_records = len(all_distance_records)
             total_inserted = 0
-            
+
             for i in range(0, total_records, batch_size):
-                batch = all_distance_records[i:i + batch_size]
+                batch = all_distance_records[i : i + batch_size]
                 inserted_count = repo.bulk_upsert_all_distances(batch)
                 total_inserted += inserted_count
-                
+
                 # Commit after each batch to prevent transaction timeout
                 session.commit()
-                
+
                 # Log progress
                 print(f"  Upserted {min(i + batch_size, total_records)}/{total_records} records...")
-            
+
             summary["records_inserted"] = total_inserted
         else:
             # Final commit if no records
@@ -174,6 +176,3 @@ def ingest_block_pois(
         print(f"Block-POI distance calculation complete: {summary}")
 
     return summary
-
-
-

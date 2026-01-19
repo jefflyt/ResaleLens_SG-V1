@@ -223,9 +223,7 @@ async def calculate_fair_value_api(
 
 
 @router.get("/block-lookup")
-async def block_lookup(
-    postal_code: str, db: Session = Depends(get_db)
-) -> dict:
+async def block_lookup(postal_code: str, db: Session = Depends(get_db)) -> dict:
     """
     Lookup HDB block information by postal code.
 
@@ -266,11 +264,7 @@ async def block_lookup(
     postal_sector = postal_code[:2]
 
     # Strategy 1: Direct match - exact postal code lookup
-    direct_matches = (
-        db.query(Block)
-        .filter(Block.postal_code == postal_code)
-        .all()
-    )
+    direct_matches = db.query(Block).filter(Block.postal_code == postal_code).all()
 
     if direct_matches:
         if len(direct_matches) == 1:
@@ -295,9 +289,7 @@ async def block_lookup(
                 )
                 for b in direct_matches
             ]
-            return BlockLookupMultipleResponse(
-                matches=matches, suggestions=True
-            ).model_dump()
+            return BlockLookupMultipleResponse(matches=matches, suggestions=True).model_dump()
 
     # Strategy 2: HDB block inference (last 3 digits = block number)
     # Only for HDB postal codes (starting with 6, 7, or 8)
@@ -336,9 +328,7 @@ async def block_lookup(
                     )
                     for b in inferred_matches
                 ]
-                return BlockLookupMultipleResponse(
-                    matches=matches, suggestions=True
-                ).model_dump()
+                return BlockLookupMultipleResponse(matches=matches, suggestions=True).model_dump()
 
     # Strategy 3: Sector fallback - find blocks in same postal sector
     sector_blocks = (
@@ -434,9 +424,7 @@ async def block_xray_page(
 
 
 @router.get("/data-status")
-async def data_status_page(
-    request: Request, db: Session = Depends(get_db)
-) -> HTMLResponse:
+async def data_status_page(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
     """
     Render Data Status page showing dataset freshness and ingestion health.
 
@@ -460,9 +448,7 @@ async def data_status_page(
 
 
 @router.get("/api/data-status")
-async def data_status_json(
-    db: Session = Depends(get_db)
-) -> dict:
+async def data_status_json(db: Session = Depends(get_db)) -> dict:
     """
     Get data status as JSON for all tracked datasets.
 

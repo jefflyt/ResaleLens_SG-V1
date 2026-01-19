@@ -1,7 +1,8 @@
 """Integration tests for Data Status API endpoints."""
 
+from datetime import UTC, datetime, timedelta
+
 import pytest
-from datetime import datetime, timedelta, timezone
 from fastapi.testclient import TestClient
 
 from resalelens.models import IngestionRun, IngestionStatus
@@ -13,7 +14,7 @@ class TestDataStatusAPI:
     @pytest.fixture
     def sample_data_status_runs(self, db_session):
         """Create sample ingestion runs for data status tests."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         runs = [
             # Healthy: Recent successful run (12 hours ago)
@@ -59,7 +60,7 @@ class TestDataStatusAPI:
 
         assert response.status_code == 200
         assert "text/html" in response.headers["content-type"].lower()
-        
+
         # Check for key elements in HTML
         assert "Data Status" in response.text
         assert "hdb_transactions" in response.text
@@ -90,7 +91,7 @@ class TestDataStatusAPI:
     def test_data_status_shows_delayed_badge(self, client: TestClient, db_session):
         """Verify 'delayed' banner and badge appear when dataset is stale."""
         # Create delayed transaction run (>48h old)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         old_run = IngestionRun(
             dataset_name="hdb_transactions",
             started_at=now - timedelta(days=3),
@@ -155,7 +156,7 @@ class TestDataStatusAPI:
 
     def test_data_status_failed_run(self, client: TestClient, db_session):
         """Test that failed ingestion runs show 'Failed' status."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         failed_run = IngestionRun(
             dataset_name="hdb_postal_codes",
             started_at=now - timedelta(hours=1),
@@ -173,7 +174,9 @@ class TestDataStatusAPI:
         data = response.json()
 
         # Find postal codes dataset
-        postal_codes_dataset = next(d for d in data["datasets"] if d["dataset_name"] == "hdb_postal_codes")
+        postal_codes_dataset = next(
+            d for d in data["datasets"] if d["dataset_name"] == "hdb_postal_codes"
+        )
         assert postal_codes_dataset["status"] == "failed"
         assert postal_codes_dataset["status_label"] == "Failed"
 
@@ -189,6 +192,7 @@ class TestDataStatusAPI:
         # Check for timestamp format (YYYY-MM-DD HH:MM:SS)
         # Should find at least one timestamp in the response
         import re
+
         timestamp_pattern = r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}"
         assert re.search(timestamp_pattern, response.text)
 

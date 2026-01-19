@@ -46,12 +46,12 @@ class TestBlockLookupAPI:
         for block in blocks:
             db_session.add(block)
         db_session.commit()
-       
+
         for block in blocks:
             db_session.refresh(block)
-        
+
         yield blocks
-        
+
         # Cleanup
         for block in blocks:
             db_session.delete(block)
@@ -116,7 +116,9 @@ class TestBlockLookupAPI:
         for suggestion in data["suggestions"]:
             assert suggestion["postal_sector"] == "65"
 
-    def test_postal_code_not_found_no_suggestions(self, client: TestClient, sample_blocks_with_postal_codes):
+    def test_postal_code_not_found_no_suggestions(
+        self, client: TestClient, sample_blocks_with_postal_codes
+    ):
         """Test postal code not found with no suggestions available."""
         # Postal sector 99 doesn't exist in database
         response = client.get("/api/block-lookup?postal_code=999999")

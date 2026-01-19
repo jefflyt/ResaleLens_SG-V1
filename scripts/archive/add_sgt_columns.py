@@ -1,8 +1,10 @@
 """Add started_at_sgt and completed_at_sgt columns to ingestion_runs table."""
+
+import os
 import sys
 from pathlib import Path
+
 from dotenv import load_dotenv
-import os
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -30,23 +32,28 @@ with engine.connect() as conn:
     # Drop columns if they exist to reset type
     conn.execute(text("ALTER TABLE ingestion_runs DROP COLUMN IF EXISTS started_at_sgt"))
     conn.execute(text("ALTER TABLE ingestion_runs DROP COLUMN IF EXISTS completed_at_sgt"))
-    
+
     # Add started_at_sgt as naive timestamp (stores SGT wall clock time)
-    conn.execute(text("""
-        ALTER TABLE ingestion_runs 
+    conn.execute(
+        text("""
+        ALTER TABLE ingestion_runs
         ADD COLUMN started_at_sgt TIMESTAMP WITHOUT TIME ZONE
-    """))
+    """)
+    )
     print("✓ Added started_at_sgt column (Naive)")
-    
+
     # Add completed_at_sgt as naive timestamp
-    conn.execute(text("""
-        ALTER TABLE ingestion_runs 
+    conn.execute(
+        text("""
+        ALTER TABLE ingestion_runs
         ADD COLUMN completed_at_sgt TIMESTAMP WITHOUT TIME ZONE
-    """))
+    """)
+    )
     print("✓ Added completed_at_sgt column (Naive)")
-    
+
     conn.commit()
 
 print("=" * 80)
 print("✅ Migration successful")
 print("=" * 80)
+# noqa: E402

@@ -4,10 +4,12 @@ This ensures:
 1. Python code (App Logic) only deals with UTC.
 2. Database automatically maintains SGT columns for readability.
 """
+
+import os
 import sys
 from pathlib import Path
+
 from dotenv import load_dotenv
-import os
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -30,14 +32,18 @@ print("=" * 80)
 with engine.connect() as conn:
     # 1. Ensure columns exist (Naive Timestamp)
     # We use "IF NOT EXISTS" to be safe.
-    conn.execute(text("""
-        ALTER TABLE ingestion_runs 
+    conn.execute(
+        text("""
+        ALTER TABLE ingestion_runs
         ADD COLUMN IF NOT EXISTS started_at_sgt TIMESTAMP WITHOUT TIME ZONE
-    """))
-    conn.execute(text("""
-        ALTER TABLE ingestion_runs 
+    """)
+    )
+    conn.execute(
+        text("""
+        ALTER TABLE ingestion_runs
         ADD COLUMN IF NOT EXISTS completed_at_sgt TIMESTAMP WITHOUT TIME ZONE
-    """))
+    """)
+    )
     print("✓ Columns verified")
 
     # 2. Create Trigger Function
@@ -71,7 +77,7 @@ with engine.connect() as conn:
     # 3. Create Trigger
     # Fires BEFORE INSERT or UPDATE to set the SGT values based on the UTC values.
     conn.execute(text("DROP TRIGGER IF EXISTS set_sgt_timestamp ON ingestion_runs"))
-    
+
     ddl_trigger = """
     CREATE TRIGGER set_sgt_timestamp
     BEFORE INSERT OR UPDATE ON ingestion_runs
@@ -80,17 +86,20 @@ with engine.connect() as conn:
     """
     conn.execute(text(ddl_trigger))
     print("✓ Trigger 'set_sgt_timestamp' created")
-    
+
     # 4. Backfill existing data
-    conn.execute(text("""
-        UPDATE ingestion_runs 
-        SET started_at = started_at 
+    conn.execute(
+        text("""
+        UPDATE ingestion_runs
+        SET started_at = started_at
         WHERE started_at_sgt IS NULL
-    """))
+    """)
+    )
     print("✓ Backfill triggered (dummy update)")
-    
+
     conn.commit()
 
 print("=" * 80)
 print("✅ Trigger setup successful. SGT columns will auto-update.")
 print("=" * 80)
+# noqa: E402

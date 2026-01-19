@@ -7,10 +7,11 @@ Usage:
     python scripts/add_postal_sector_column.py
 """
 
-from sqlalchemy import create_engine, text
 import os
 from pathlib import Path
+
 from dotenv import load_dotenv
+from sqlalchemy import create_engine, text
 
 # Load environment variables from .env.local first (priority), then .env
 env_local = Path(".env.local")
@@ -25,6 +26,7 @@ elif env_file.exists():
 else:
     print("No .env file found")
 
+
 def add_postal_sector_column():
     """Add postal_sector column and index to blocks table."""
     database_url = os.getenv("DATABASE_URL")
@@ -33,33 +35,32 @@ def add_postal_sector_column():
         return
 
     engine = create_engine(database_url)
-    
+
     with engine.connect() as conn:
         # Add postal_sector column if not exists
         print("Adding postal_sector column...")
-        conn.execute(text(
-            "ALTER TABLE blocks ADD COLUMN IF NOT EXISTS postal_sector VARCHAR(2)"
-        ))
+        conn.execute(text("ALTER TABLE blocks ADD COLUMN IF NOT EXISTS postal_sector VARCHAR(2)"))
         conn.commit()
         print("✓ postal_sector column added")
-        
+
         # Create index if not exists
         print("Creating index on postal_sector...")
-        conn.execute(text(
-            "CREATE INDEX IF NOT EXISTS idx_blocks_postal_sector ON blocks(postal_sector)"
-        ))
+        conn.execute(
+            text("CREATE INDEX IF NOT EXISTS idx_blocks_postal_sector ON blocks(postal_sector)")
+        )
         conn.commit()
         print("✓ Index idx_blocks_postal_sector created")
-        
+
         # Create index on postal_code if not exists
         print("Creating index on postal_code...")
-        conn.execute(text(
-            "CREATE INDEX IF NOT EXISTS idx_blocks_postal_code ON blocks(postal_code)"
-        ))
+        conn.execute(
+            text("CREATE INDEX IF NOT EXISTS idx_blocks_postal_code ON blocks(postal_code)")
+        )
         conn.commit()
         print("✓ Index idx_blocks_postal_code created")
-        
+
         print("\n✅ Migration complete!")
+
 
 if __name__ == "__main__":
     add_postal_sector_column()

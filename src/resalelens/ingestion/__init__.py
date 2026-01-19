@@ -15,4 +15,3 @@ __all__ = [
     "ingest_block_pois",
     "ingest_transaction_backfill",
 ]
-

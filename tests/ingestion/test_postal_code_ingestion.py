@@ -1,7 +1,8 @@
 """Tests for HDB postal code ingestion."""
 
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import MagicMock, patch
 
 from resalelens.ingestion.hdb_postal_codes import ingest_hdb_postal_codes
 from resalelens.models import Block
@@ -55,12 +56,12 @@ class TestPostalCodeIngestion:
         for block in blocks:
             db_session.add(block)
         db_session.commit()
-        
+
         for block in blocks:
             db_session.refresh(block)
-        
+
         yield blocks
-        
+
         # Cleanup
         for block in blocks:
             db_session.delete(block)
@@ -120,7 +121,7 @@ class TestPostalCodeIngestion:
 
         mock_fetch.return_value = mock_api_response
 
-        summary = ingest_hdb_postal_codes(db_session, skip_existing=True)
+        ingest_hdb_postal_codes(db_session, skip_existing=True)
 
         # Verify that block 514's postal code was not updated (existing was skipped)
         block_514_after = db_session.query(Block).filter_by(block="514").first()
@@ -159,9 +160,7 @@ class TestPostalCodeIngestion:
         assert summary["blocks_matched"] == 0
 
     @patch("resalelens.ingestion.hdb_postal_codes.fetch_json_with_retry")
-    def test_batch_size_limit(
-        self, mock_fetch, db_session, sample_blocks, mock_api_response
-    ):
+    def test_batch_size_limit(self, mock_fetch, db_session, sample_blocks, mock_api_response):
         """Test that batch_size parameter limits records processed."""
         mock_fetch.return_value = mock_api_response
 
