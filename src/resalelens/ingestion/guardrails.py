@@ -60,7 +60,7 @@ class IngestionGuardrails:
             Tuple of (is_valid, list of missing variables)
         """
         required = [
-            "DATA_GOV_SG_RESOURCE_ID",
+            "DATA_GOV_SG_TRANSACTION_ID",
             "ONEMAP_EMAIL",
             "ONEMAP_PASSWORD",
         ]

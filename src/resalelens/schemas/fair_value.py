@@ -67,6 +67,7 @@ class Explainability(BaseModel):
 class FairValueResponse(BaseModel):
     """Response model for Fair Value calculation."""
 
+    block_id: int = Field(..., description="Block ID for linking to Block X-Ray")
     fair_value_low: float = Field(..., description="Fair Value lower bound (P25)")
     fair_value_mid: float = Field(..., description="Fair Value midpoint")
     fair_value_high: float = Field(..., description="Fair Value upper bound (P75)")
@@ -77,3 +78,4 @@ class FairValueResponse(BaseModel):
     comp_count: int = Field(..., description="Number of comps used in calculation")
     explainability: Explainability = Field(..., description="Explainability details")
     comps: list[Comp] = Field(..., description="List of comparable transactions")
+

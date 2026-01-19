@@ -79,4 +79,5 @@ class BlockXRayData(BaseModel):
     volatility: VolatilityInfo | None
 
     # Metadata
-    last_updated: datetime
+    last_updated: datetime | None
+

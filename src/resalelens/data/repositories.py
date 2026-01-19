@@ -583,6 +583,36 @@ class BlockPOIRepository(BaseRepository):
         )
 
         self.session.execute(stmt)
-        self.session.commit()
+        # Note: Commit is handled by the ingestion context manager for better performance
 
         return len(records)
+
+    def bulk_upsert_all_distances(self, all_records: list[dict[str, Any]]) -> int:
+        """
+        Bulk upsert ALL block-POI distances in a single operation.
+
+        This is significantly faster than calling upsert_distances per block,
+        as it performs one SQL statement instead of thousands.
+
+        Args:
+            all_records: List of dicts with block_id, poi_id, and distance_m
+
+        Returns:
+            Count of records inserted/updated
+        """
+        from sqlalchemy.dialects.postgresql import insert
+
+        if not all_records:
+            return 0
+
+        # Use PostgreSQL INSERT ... ON CONFLICT DO UPDATE for bulk operation
+        stmt = insert(BlockPOI).values(all_records)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=["block_id", "poi_id"],
+            set_={"distance_m": stmt.excluded.distance_m},
+        )
+
+        self.session.execute(stmt)
+        # Note: Commit is handled by the caller
+
+        return len(all_records)

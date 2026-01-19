@@ -143,6 +143,7 @@ async def calculate_fair_value_api(
                 name="results.html",
                 context={
                     "request": request,
+                    "block_id": result.block_id,
                     "fair_value_low": result.fair_value_low,
                     "fair_value_mid": result.fair_value_mid,
                     "fair_value_high": result.fair_value_high,
@@ -170,6 +171,7 @@ async def calculate_fair_value_api(
         else:
             # Return JSON for regular API requests
             response = {
+                "block_id": result.block_id,
                 "fair_value_low": result.fair_value_low,
                 "fair_value_mid": result.fair_value_mid,
                 "fair_value_high": result.fair_value_high,
@@ -426,7 +428,7 @@ async def block_xray_page(
         "block_xray.html",
         {
             "request": request,
-            "block": block_data,
+            "block": block_data.model_dump() if block_data else None,
         },
     )
 

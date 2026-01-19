@@ -14,7 +14,7 @@ class TestDataStatus:
         """Verify all datasets show 'healthy' status when recently ingested."""
         # Create recent successful runs for all datasets (within last 24 hours)
         now = datetime.now(timezone.utc)
-        datasets = ["hdb_transactions", "hdb_blocks", "hdb_property_info", "pois", "block_pois"]
+        datasets = ["hdb_transactions", "hdb_postal_codes", "hdb_property_info", "pois", "block_pois"]
 
         for dataset_name in datasets:
             run = IngestionRun(
@@ -65,10 +65,10 @@ class TestDataStatus:
 
     def test_get_data_status_failed(self, db_session):
         """Verify 'failed' status when latest run has status='failed'."""
-        # Create failed run for hdb_blocks
+        # Create failed run for hdb_postal_codes
         now = datetime.now(timezone.utc)
         failed_run = IngestionRun(
-            dataset_name="hdb_blocks",
+            dataset_name="hdb_postal_codes",
             started_at=now - timedelta(hours=1),
             completed_at=None,  # Failed runs may not have completed_at
             status=IngestionStatus.FAILED,
@@ -81,12 +81,12 @@ class TestDataStatus:
         # Get data status
         statuses = get_data_status(db_session)
 
-        # Find blocks status
-        blocks_status = next(s for s in statuses if s.dataset_name == "hdb_blocks")
+        # Find postal codes status
+        postal_codes_status = next(s for s in statuses if s.dataset_name == "hdb_postal_codes")
 
         # Verify failed
-        assert blocks_status.status == "failed"
-        assert blocks_status.status_label == "Failed"
+        assert postal_codes_status.status == "failed"
+        assert postal_codes_status.status_label == "Failed"
 
     def test_get_data_status_no_runs(self, db_session):
         """Verify service returns all tracked datasets regardless of run history."""
@@ -100,7 +100,7 @@ class TestDataStatus:
         assert len(statuses) == 5
         dataset_names = [s.dataset_name for s in statuses]
         assert "hdb_transactions" in dataset_names
-        assert "hdb_blocks" in dataset_names
+        assert "hdb_postal_codes" in dataset_names
         assert "hdb_property_info" in dataset_names
         assert "pois" in dataset_names
         assert "block_pois" in dataset_names
@@ -217,7 +217,7 @@ class TestDataStatus:
             assert status.next_ingest, f"Missing next_ingest for {status.dataset_name}"
             assert status.dataset_name in [
                 "hdb_transactions",
-                "hdb_blocks",
+                "hdb_postal_codes",
                 "hdb_property_info",
                 "pois",
                 "block_pois",

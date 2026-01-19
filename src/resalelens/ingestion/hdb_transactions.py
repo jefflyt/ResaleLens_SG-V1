@@ -47,11 +47,11 @@ def ingest_hdb_transactions(session: Session, incremental: bool = False) -> dict
     """
     # Get configuration from environment
     api_url = os.getenv("DATA_GOV_SG_API_URL", "https://data.gov.sg/api/action/datastore_search")
-    resource_id = os.getenv("DATA_GOV_SG_RESOURCE_ID")
+    resource_id = os.getenv("DATA_GOV_SG_TRANSACTION_ID")
 
     if not resource_id:
         raise ValueError(
-            "DATA_GOV_SG_RESOURCE_ID environment variable is required for HDB transactions ingestion"
+            "DATA_GOV_SG_TRANSACTION_ID environment variable is required for HDB transactions ingestion"
         )
 
     retry_count = int(os.getenv("INGESTION_RETRY_COUNT", "3"))
@@ -103,6 +103,7 @@ def ingest_hdb_transactions(session: Session, incremental: bool = False) -> dict
                         "resource_id": resource_id,
                         "limit": limit,
                         "offset": offset,
+                        "sort": "month desc",  # Optimize: fetch newest first
                     },
                     max_retries=retry_count,
                 )
@@ -125,10 +126,11 @@ def ingest_hdb_transactions(session: Session, incremental: bool = False) -> dict
                         # Parse date
                         date_obj = parse_date(record["month"])
 
-                        # Incremental sync: skip records older than since_date
+                        # Incremental sync: stop fetching if we hit older records
                         if since_date and date_obj.date() <= since_date:
-                            summary["skipped"] += 1  # type: ignore[assignment,operator]
-                            continue
+                            print(f"Reached existing data ({date_obj.date()} <= {since_date}). Stopping incremental sync.")
+                            has_more = False
+                            break
 
                         # Add to batch
                         transactions_batch.append(
@@ -224,7 +226,10 @@ def ingest_hdb_transactions(session: Session, incremental: bool = False) -> dict
 
                 # Check if there are more records
                 offset += limit  # type: ignore[assignment,operator]
-                has_more = offset < total_records  # type: ignore[operator]
+                
+                # Only check total_records if we haven't already decided to stop
+                if has_more:
+                    has_more = offset < total_records  # type: ignore[operator]
 
                 # Check if we've hit max records limit
                 if max_records > 0 and summary["total_fetched"] >= max_records:  # type: ignore[operator]

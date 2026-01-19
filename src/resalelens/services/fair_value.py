@@ -443,8 +443,13 @@ def calculate_fair_value(request: FairValueRequest, db: Session) -> FairValueRes
     # Get block lat/lng for distance calculations
     block_repo = BlockRepository(db)
     block = block_repo.get_by_block_and_street(request.block, request.street)
-    user_lat = float(block.latitude) if block and block.latitude else None
-    user_lng = float(block.longitude) if block and block.longitude else None
+    
+    if not block:
+        raise ValueError(f"Block {request.block} {request.street} not found in database")
+    
+    block_id = block.id
+    user_lat = float(block.latitude) if block.latitude else None
+    user_lng = float(block.longitude) if block.longitude else None
 
     # Step 2: Normalize comps
     df = normalize_comps(comps, request.storey_range, user_lat, user_lng)
@@ -484,6 +489,7 @@ def calculate_fair_value(request: FairValueRequest, db: Session) -> FairValueRes
         )
 
     return FairValueResponse(
+        block_id=block_id,
         fair_value_low=fair_value_low,
         fair_value_mid=fair_value_mid,
         fair_value_high=fair_value_high,

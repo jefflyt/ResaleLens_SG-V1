@@ -19,10 +19,11 @@
     <h3>Check Fair Value</h3>
 
     <!-- Input Mode Tabs -->
-    <div class="input-mode-tabs">
-      <button id="postal-code-tab" class="tab-button active" onclick="switchInputMode('postal-code')">Postal
-        Code</button>
-      <button id="manual-entry-tab" class="tab-button" onclick="switchInputMode('manual-entry')">Manual Entry</button>
+    <div class="input-mode-tabs" role="tablist">
+      <button id="postal-code-tab" class="tab-button active" role="tab" aria-selected="true"
+        aria-controls="postal-code-mode" tabindex="0" onclick="switchInputMode('postal-code')">Postal Code</button>
+      <button id="manual-entry-tab" class="tab-button" role="tab" aria-selected="false"
+        aria-controls="manual-entry-mode" tabindex="-1" onclick="switchInputMode('manual-entry')">Manual Entry</button>
     </div>
 
     <!-- Postal Code Input Mode (Default Active) -->
@@ -72,10 +73,13 @@
           <label for="flat_type">Flat Type *</label>
           <select id="flat_type" name="flat_type" required>
             <option value="">Select flat type</option>
+            <option value="1 ROOM">1 ROOM</option>
+            <option value="2 ROOM">2 ROOM</option>
             <option value="3 ROOM">3 ROOM</option>
             <option value="4 ROOM">4 ROOM</option>
             <option value="5 ROOM">5 ROOM</option>
             <option value="EXECUTIVE">EXECUTIVE</option>
+            <option value="MULTI-GENERATION">MULTI-GENERATION</option>
           </select>
         </div>
 
@@ -89,7 +93,26 @@
       <div class="form-row">
         <div class="form-group">
           <label for="storey_range">Storey Range *</label>
-          <input type="text" id="storey_range" name="storey_range" required placeholder="e.g., 04 TO 06" />
+          <select id="storey_range" name="storey_range" required>
+            <option value="">Select storey range</option>
+            <option value="01 TO 03">01 - 03</option>
+            <option value="04 TO 06">04 - 06</option>
+            <option value="07 TO 09">07 - 09</option>
+            <option value="10 TO 12">10 - 12</option>
+            <option value="13 TO 15">13 - 15</option>
+            <option value="16 TO 18">16 - 18</option>
+            <option value="19 TO 21">19 - 21</option>
+            <option value="22 TO 24">22 - 24</option>
+            <option value="25 TO 27">25 - 27</option>
+            <option value="28 TO 30">28 - 30</option>
+            <option value="31 TO 33">31 - 33</option>
+            <option value="34 TO 36">34 - 36</option>
+            <option value="37 TO 39">37 - 39</option>
+            <option value="40 TO 42">40 - 42</option>
+            <option value="43 TO 45">43 - 45</option>
+            <option value="46 TO 48">46 - 48</option>
+            <option value="49 TO 51">49 - 51</option>
+          </select>
         </div>
 
         <div class="form-group">
@@ -141,7 +164,7 @@
 
 {% block scripts %}
 <script>
-  // Tab switching
+  // Tab switching with ARIA support
   function switchInputMode(mode) {
     const postalCodeTab = document.getElementById('postal-code-tab');
     const manualEntryTab = document.getElementById('manual-entry-tab');
@@ -150,7 +173,11 @@
 
     if (mode === 'postal-code') {
       postalCodeTab.classList.add('active');
+      postalCodeTab.setAttribute('aria-selected', 'true');
+      postalCodeTab.setAttribute('tabindex', '0');
       manualEntryTab.classList.remove('active');
+      manualEntryTab.setAttribute('aria-selected', 'false');
+      manualEntryTab.setAttribute('tabindex', '-1');
       postalCodeMode.classList.add('active');
       manualEntryMode.classList.remove('active');
 
@@ -159,7 +186,11 @@
       document.getElementById('address-display').style.display = 'none';
     } else {
       manualEntryTab.classList.add('active');
+      manualEntryTab.setAttribute('aria-selected', 'true');
+      manualEntryTab.setAttribute('tabindex', '0');
       postalCodeTab.classList.remove('active');
+      postalCodeTab.setAttribute('aria-selected', 'false');
+      postalCodeTab.setAttribute('tabindex', '-1');
       manualEntryMode.classList.add('active');
       postalCodeMode.classList.remove('active');
 

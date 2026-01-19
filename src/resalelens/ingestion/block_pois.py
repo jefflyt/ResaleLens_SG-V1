@@ -66,7 +66,7 @@ def ingest_block_pois(
 
     repo = BlockPOIRepository(session)
 
-    with log_ingestion_run(session, "block_pois_distances") as run:
+    with log_ingestion_run(session, "block_pois") as run:
         print(f"Starting Block-POI distance calculation (max {max_distance_m}m)...")
 
         # 1. Fetch all POIs (usually < 1000, so fits in memory)
@@ -110,7 +110,8 @@ def ingest_block_pois(
         lon_scale = 111320.0 * math.cos(singapore_lat_rad)
         lon_delta = max_distance_m / lon_scale
 
-        # 3. Process blocks
+        # 3. Process blocks and collect ALL distance records
+        all_distance_records = []
 
         for idx, block in enumerate(blocks):
             block_lat = float(block.latitude)
@@ -119,8 +120,6 @@ def ingest_block_pois(
             # Bounding box filter
             min_lat, max_lat = block_lat - lat_delta, block_lat + lat_delta
             min_lon, max_lon = block_lon - lon_delta, block_lon + lon_delta
-
-            block_distances = []
 
             for poi in poi_data:
                 # Fast bounding box check
@@ -133,12 +132,12 @@ def ingest_block_pois(
                 summary["distances_calculated"] += 1
 
                 if dist <= max_distance_m:
-                    block_distances.append({"poi_id": poi["id"], "distance_m": dist})
-
-            # Upsert if we found any POIs
-            if block_distances:
-                inserted_count = repo.upsert_distances(block.id, block_distances)
-                summary["records_inserted"] += inserted_count
+                    # Collect record instead of upserting immediately
+                    all_distance_records.append({
+                        "block_id": block.id,
+                        "poi_id": poi["id"],
+                        "distance_m": dist,
+                    })
 
             summary["blocks_processed"] += 1
 
@@ -146,7 +145,35 @@ def ingest_block_pois(
             if (idx + 1) % 100 == 0:
                 print(f"Processed {idx + 1}/{total_blocks} blocks...")
 
+        # 4. Perform batched bulk upsert for ALL records
+        print(f"Upserting {len(all_distance_records)} distance records in batches...")
+        
+        if all_distance_records:
+            # Process in smaller batches with intermediate commits to avoid timeout
+            batch_size = 5000
+            total_records = len(all_distance_records)
+            total_inserted = 0
+            
+            for i in range(0, total_records, batch_size):
+                batch = all_distance_records[i:i + batch_size]
+                inserted_count = repo.bulk_upsert_all_distances(batch)
+                total_inserted += inserted_count
+                
+                # Commit after each batch to prevent transaction timeout
+                session.commit()
+                
+                # Log progress
+                print(f"  Upserted {min(i + batch_size, total_records)}/{total_records} records...")
+            
+            summary["records_inserted"] = total_inserted
+        else:
+            # Final commit if no records
+            session.commit()
+
         run.rows_processed = summary["records_inserted"]
         print(f"Block-POI distance calculation complete: {summary}")
 
     return summary
+
+
+

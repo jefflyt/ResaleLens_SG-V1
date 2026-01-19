@@ -24,9 +24,9 @@ class TestDataStatusAPI:
                 status=IngestionStatus.SUCCESS,
                 rows_processed=1000,
             ),
-            # Healthy: Recent successful run for blocks (1 day ago)
+            # Healthy: Recent successful run for postal codes (1 day ago)
             IngestionRun(
-                dataset_name="hdb_blocks",
+                dataset_name="hdb_postal_codes",
                 started_at=now - timedelta(days=1),
                 completed_at=now - timedelta(days=1),
                 status=IngestionStatus.SUCCESS,
@@ -63,7 +63,7 @@ class TestDataStatusAPI:
         # Check for key elements in HTML
         assert "Data Status" in response.text
         assert "hdb_transactions" in response.text
-        assert "hdb_blocks" in response.text
+        assert "hdb_postal_codes" in response.text
 
     def test_data_status_json_api(self, client: TestClient, sample_data_status_runs):
         """Test GET /api/data-status returns correct JSON schema."""
@@ -135,7 +135,7 @@ class TestDataStatusAPI:
         # Verify all tracked datasets are present
         dataset_names = [d["dataset_name"] for d in datasets]
         assert "hdb_transactions" in dataset_names
-        assert "hdb_blocks" in dataset_names
+        assert "hdb_postal_codes" in dataset_names
         assert "hdb_property_info" in dataset_names
         assert "pois" in dataset_names
         assert "block_pois" in dataset_names
@@ -157,7 +157,7 @@ class TestDataStatusAPI:
         """Test that failed ingestion runs show 'Failed' status."""
         now = datetime.now(timezone.utc)
         failed_run = IngestionRun(
-            dataset_name="hdb_blocks",
+            dataset_name="hdb_postal_codes",
             started_at=now - timedelta(hours=1),
             completed_at=None,
             status=IngestionStatus.FAILED,
@@ -172,10 +172,10 @@ class TestDataStatusAPI:
         assert response.status_code == 200
         data = response.json()
 
-        # Find blocks dataset
-        blocks_dataset = next(d for d in data["datasets"] if d["dataset_name"] == "hdb_blocks")
-        assert blocks_dataset["status"] == "failed"
-        assert blocks_dataset["status_label"] == "Failed"
+        # Find postal codes dataset
+        postal_codes_dataset = next(d for d in data["datasets"] if d["dataset_name"] == "hdb_postal_codes")
+        assert postal_codes_dataset["status"] == "failed"
+        assert postal_codes_dataset["status_label"] == "Failed"
 
         # Cleanup
         db_session.delete(failed_run)

@@ -14,25 +14,25 @@ DATASET_METADATA = {
         "next_ingest": "Weekly Sunday 03:00 SGT",
         "staleness_threshold_hours": 48,  # Delayed if >48h old
     },
-    "hdb_blocks": {
+    "hdb_postal_codes": {
         "source": "data.gov.sg",
-        "next_ingest": "Monthly 1st 03:30 SGT",
-        "staleness_threshold_hours": 720,  # 30 days (monthly data, allow grace period)
+        "next_ingest": "Weekly Sunday 03:45 SGT",
+        "staleness_threshold_hours": 168,  # 7 days (weekly)
     },
     "hdb_property_info": {
         "source": "data.gov.sg",
-        "next_ingest": "Monthly 1st 03:30 SGT",
-        "staleness_threshold_hours": 720,  # 30 days
+        "next_ingest": "Weekly Sunday 04:00 SGT",
+        "staleness_threshold_hours": 168,  # 7 days (weekly)
     },
     "pois": {
         "source": "OneMap API",
-        "next_ingest": "Monthly 1st 03:30 SGT",
-        "staleness_threshold_hours": 720,  # 30 days
+        "next_ingest": "Weekly Sunday 03:30 SGT",
+        "staleness_threshold_hours": 168,  # 7 days (weekly)
     },
     "block_pois": {
         "source": "Calculated",
-        "next_ingest": "Monthly 1st 03:30 SGT (after POI ingestion)",
-        "staleness_threshold_hours": 720,  # 30 days
+        "next_ingest": "Weekly Sunday 04:15 SGT (after geolocation)",
+        "staleness_threshold_hours": 168,  # 7 days (weekly)
     },
 }
 

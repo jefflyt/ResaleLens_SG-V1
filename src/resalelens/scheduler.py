@@ -8,7 +8,6 @@ from apscheduler.triggers.cron import CronTrigger
 from .database import SessionLocal
 from .ingestion import (
     ingest_block_pois,
-    ingest_hdb_blocks,
     ingest_hdb_postal_codes,
     ingest_hdb_property_info,
     ingest_hdb_transactions,
@@ -27,23 +26,11 @@ def run_hdb_transactions_ingestion() -> None:
     logger.info("Starting scheduled HDB transactions ingestion...")
     db = SessionLocal()
     try:
-        summary = ingest_hdb_transactions(db)
+        # Use incremental=True to only fetch new data
+        summary = ingest_hdb_transactions(db, incremental=True)
         logger.info(f"HDB transactions ingestion completed: {summary}")
     except Exception as e:
         logger.error(f"HDB transactions ingestion failed: {e}")
-    finally:
-        db.close()
-
-
-def run_hdb_blocks_ingestion() -> None:
-    """Scheduled job for HDB blocks ingestion."""
-    logger.info("Starting scheduled HDB blocks ingestion...")
-    db = SessionLocal()
-    try:
-        summary = ingest_hdb_blocks(db)
-        logger.info(f"HDB blocks ingestion completed: {summary}")
-    except Exception as e:
-        logger.error(f"HDB blocks ingestion failed: {e}")
     finally:
         db.close()
 
@@ -68,6 +55,7 @@ def run_pois_ingestion() -> None:
     try:
         summary = ingest_pois(db)
         logger.info(f"POI ingestion completed: {summary}")
+        # logger.warning("POI ingestion is currently deprecated/broken. Skipping.")
     except Exception as e:
         logger.error(f"POI ingestion failed: {e}")
     finally:
@@ -105,7 +93,8 @@ def run_hdb_postal_codes_ingestion() -> None:
     logger.info("Starting scheduled HDB postal codes ingestion...")
     db = SessionLocal()
     try:
-        summary = ingest_hdb_postal_codes(db, skip_existing=False)
+        # skip_existing=True to only generate for new blocks
+        summary = ingest_hdb_postal_codes(db, skip_existing=True)
         logger.info(f"HDB postal codes ingestion completed: {summary}")
     except Exception as e:
         logger.error(f"HDB postal codes ingestion failed: {e}")
@@ -125,62 +114,52 @@ def start_scheduler() -> None:
         replace_existing=True,
     )
 
-    # HDB Blocks: Every Sunday 03:15 SGT (15 min after transactions)
-    scheduler.add_job(
-        run_hdb_blocks_ingestion,
-        trigger=CronTrigger(day_of_week="sun", hour=3, minute=15, timezone="Asia/Singapore"),
-        id="hdb_blocks_weekly",
-        name="HDB Blocks Weekly Ingestion",
-        max_instances=1,
-        replace_existing=True,
-    )
-
-    # Transaction Backfill: Every Sunday 03:30 SGT (15 min after blocks)
+    # Transaction Backfill: Every Sunday 03:15 SGT (15 min after transactions)
     scheduler.add_job(
         run_transaction_backfill,
-        trigger=CronTrigger(day_of_week="sun", hour=3, minute=30, timezone="Asia/Singapore"),
+        trigger=CronTrigger(day_of_week="sun", hour=3, minute=15, timezone="Asia/Singapore"),
         id="transaction_backfill_weekly",
         name="Transaction Backfill Weekly",
         max_instances=1,
         replace_existing=True,
     )
 
-    # POIs: Monthly on 1st @ 03:30 SGT (MRT, LRT, supermarkets, clinics, parks, malls, hawkers, schools)
+    # POIs: Every Sunday 03:30 SGT (MRT, LRT, supermarkets, clinics, parks, malls, hawkers, schools)
     scheduler.add_job(
         run_pois_ingestion,
-        trigger=CronTrigger(day=1, hour=3, minute=30, timezone="Asia/Singapore"),
-        id="pois_monthly",
-        name="POI Monthly Ingestion",
+        trigger=CronTrigger(day_of_week="sun", hour=3, minute=30, timezone="Asia/Singapore"),
+        id="pois_weekly",
+        name="POI Weekly Ingestion",
         max_instances=1,
         replace_existing=True,
     )
 
-    # Block-POI Distances: Monthly on 1st @ 03:45 SGT (15 min after POI ingestion)
-    scheduler.add_job(
-        run_block_pois_calculation,
-        trigger=CronTrigger(day=1, hour=3, minute=45, timezone="Asia/Singapore"),
-        id="block_pois_monthly",
-        name="Block-POI Distance Monthly Calculation",
-        max_instances=1,
-        replace_existing=True,
-    )
-
-    # HDB Property Info: Monthly on 1st @ 04:00 SGT
-    scheduler.add_job(
-        run_hdb_property_info_ingestion,
-        trigger=CronTrigger(day=1, hour=4, minute=0, timezone="Asia/Singapore"),
-        id="hdb_property_info_monthly",
-        name="HDB Property Info Monthly Ingestion",
-        max_instances=1,
-        replace_existing=True,
-    )
-
-    # HDB Postal Codes: Monthly on 1st @ 04:15 SGT (after property info)
+    # HDB Postal Codes: Every Sunday 03:45 SGT (provides geolocation for blocks)
     scheduler.add_job(
         run_hdb_postal_codes_ingestion,
-        trigger=CronTrigger(day=1, hour=4, minute=15, timezone="Asia/Singapore"),
-        id="hdb_postal_codes_monthly",
-        name="HDB Postal Codes Monthly Ingestion",
+        trigger=CronTrigger(day_of_week="sun", hour=3, minute=45, timezone="Asia/Singapore"),
+        id="hdb_postal_codes_weekly",
+        name="HDB Postal Codes Weekly Ingestion",
+        max_instances=1,
+        replace_existing=True,
+    )
+
+    # HDB Property Info: Every Sunday 04:00 SGT
+    scheduler.add_job(
+        run_hdb_property_info_ingestion,
+        trigger=CronTrigger(day_of_week="sun", hour=4, minute=0, timezone="Asia/Singapore"),
+        id="hdb_property_info_weekly",
+        name="HDB Property Info Weekly Ingestion",
+        max_instances=1,
+        replace_existing=True,
+    )
+
+    # Block-POI Distances: Every Sunday 04:15 SGT (after postal codes provide geolocation)
+    scheduler.add_job(
+        run_block_pois_calculation,
+        trigger=CronTrigger(day_of_week="sun", hour=4, minute=15, timezone="Asia/Singapore"),
+        id="block_pois_weekly",
+        name="Block-POI Distance Weekly Calculation",
         max_instances=1,
         replace_existing=True,
     )
@@ -189,12 +168,11 @@ def start_scheduler() -> None:
     scheduler.start()
     logger.info("APScheduler started with ingestion jobs")
     logger.info("  - HDB Transactions: Sundays 03:00 SGT (weekly)")
-    logger.info("  - HDB Blocks: Sundays 03:15 SGT (weekly)")
-    logger.info("  - Transaction Backfill: Sundays 03:30 SGT (weekly)")
-    logger.info("  - POIs: 1st of month 03:30 SGT (monthly)")
-    logger.info("  - Block-POI Distances: 1st of month 03:45 SGT (monthly)")
-    logger.info("  - HDB Property Info: 1st of month 04:00 SGT (monthly)")
-    logger.info("  - HDB Postal Codes: 1st of month 04:15 SGT (monthly)")
+    logger.info("  - Transaction Backfill: Sundays 03:15 SGT (weekly)")
+    logger.info("  - POIs: Sundays 03:30 SGT (weekly)")
+    logger.info("  - HDB Postal Codes: Sundays 03:45 SGT (weekly)")
+    logger.info("  - HDB Property Info: Sundays 04:00 SGT (weekly)")
+    logger.info("  - Block-POI Distances: Sundays 04:15 SGT (weekly)")
 
 
 def shutdown_scheduler() -> None:

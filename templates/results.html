@@ -128,10 +128,18 @@
 
     <!-- Call to Action Buttons -->
     <div class="cta-buttons">
-        <button class="btn btn-primary"
-            onclick="document.querySelector('form').reset(); document.querySelector('#results-container').innerHTML = '';">Check
+        <button class="btn btn-primary" onclick="resetAndScrollToForm()">Check
             Another Unit</button>
-        <button class="btn btn-secondary" disabled title="Coming soon in PR6">View Block X-Ray</button>
+        <a class="btn btn-secondary" href="/api/block/{{ block_id }}">View
+            Block X-Ray</a>
         <button class="btn btn-secondary" disabled title="Coming soon in PR7">Add to Shortlist</button>
     </div>
 </div>
+
+<script>
+    function resetAndScrollToForm() {
+        document.querySelector('#fair-value-form').reset();
+        document.querySelector('#results-container').innerHTML = '';
+        document.querySelector('.fair-value-form').scrollIntoView({ behavior: 'smooth' });
+    }
+</script>

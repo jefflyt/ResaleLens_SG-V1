@@ -44,7 +44,7 @@ def ingest_hdb_property_info(session: Session) -> dict[str, int]:
         - unmatched: Number of property records not matched to blocks
         - errors: Number of records that failed to process
     """
-    resource_id = "d_17f5382f26140b1fdae0ba2ef6239d2f"
+    resource_id = os.getenv("DATA_GOV_SG_PROPERTY_INFO_ID", "d_17f5382f26140b1fdae0ba2ef6239d2f")
     api_url = os.getenv("DATA_GOV_SG_API_URL", "https://data.gov.sg/api/action/datastore_search")
 
     summary = {
@@ -64,6 +64,9 @@ def ingest_hdb_property_info(session: Session) -> dict[str, int]:
         normalized_map = {(b.block, normalize_street_name(b.street)): b for b in all_blocks_list}
 
         print(f"Loaded {len(blocks_map)} blocks. Fetching HDB property information from {api_url}")
+
+        # Collect all updates for bulk processing
+        updates = []
 
         # Fetch all records (paginated)
         offset = 0
@@ -90,6 +93,7 @@ def ingest_hdb_property_info(session: Session) -> dict[str, int]:
 
                 print(f"Processing {len(records)} property records (offset {offset}/{total})...")
 
+                # Collect updates instead of modifying ORM objects
                 for record in records:
                     try:
                         summary["total_fetched"] += 1
@@ -115,37 +119,47 @@ def ingest_hdb_property_info(session: Session) -> dict[str, int]:
                             summary["unmatched"] += 1
                             continue
 
+                        # Parse new values
+                        new_data = {
+                            "max_floor_lvl": parse_int(record.get("max_floor_lvl")),
+                            "year_completed": parse_int(record.get("year_completed")),
+                            "total_dwelling_units": parse_int(record.get("total_dwelling_units")),
+                            "residential": parse_bool(record.get("residential")),
+                            "commercial": parse_bool(record.get("commercial")),
+                            "market_hawker": parse_bool(record.get("market_hawker")),
+                            "multistorey_carpark": parse_bool(record.get("multistorey_carpark")),
+                            "precinct_pavilion": parse_bool(record.get("precinct_pavilion")),
+                            "miscellaneous": parse_bool(record.get("miscellaneous")),
+                            "room_1_sold": parse_int(record.get("1room_sold")),
+                            "room_2_sold": parse_int(record.get("2room_sold")),
+                            "room_3_sold": parse_int(record.get("3room_sold")),
+                            "room_4_sold": parse_int(record.get("4room_sold")),
+                            "room_5_sold": parse_int(record.get("5room_sold")),
+                            "exec_sold": parse_int(record.get("exec_sold")),
+                            "multigen_sold": parse_int(record.get("multigen_sold")),
+                            "studio_apartment_sold": parse_int(record.get("studio_apartment_sold")),
+                            "room_1_rental": parse_int(record.get("1room_rental")),
+                            "room_2_rental": parse_int(record.get("2room_rental")),
+                            "room_3_rental": parse_int(record.get("3room_rental")),
+                            "other_room_rental": parse_int(record.get("other_room_rental")),
+                        }
 
-                        # Update block with property info
-                        block.max_floor_lvl = parse_int(record.get("max_floor_lvl"))
-                        block.year_completed = parse_int(record.get("year_completed"))
-                        block.total_dwelling_units = parse_int(record.get("total_dwelling_units"))
+                        # Check if any field has changed (incremental optimization)
+                        has_changes = False
+                        for field, new_value in new_data.items():
+                            old_value = getattr(block, field)
+                            if old_value != new_value:
+                                has_changes = True
+                                break
 
-                        # Facility flags
-                        block.residential = parse_bool(record.get("residential"))
-                        block.commercial = parse_bool(record.get("commercial"))
-                        block.market_hawker = parse_bool(record.get("market_hawker"))
-                        block.multistorey_carpark = parse_bool(record.get("multistorey_carpark"))
-                        block.precinct_pavilion = parse_bool(record.get("precinct_pavilion"))
-                        block.miscellaneous = parse_bool(record.get("miscellaneous"))
-
-                        # Unit mix - sold
-                        block.room_1_sold = parse_int(record.get("1room_sold"))
-                        block.room_2_sold = parse_int(record.get("2room_sold"))
-                        block.room_3_sold = parse_int(record.get("3room_sold"))
-                        block.room_4_sold = parse_int(record.get("4room_sold"))
-                        block.room_5_sold = parse_int(record.get("5room_sold"))
-                        block.exec_sold = parse_int(record.get("exec_sold"))
-                        block.multigen_sold = parse_int(record.get("multigen_sold"))
-                        block.studio_apartment_sold = parse_int(record.get("studio_apartment_sold"))
-
-                        # Unit mix - rental
-                        block.room_1_rental = parse_int(record.get("1room_rental"))
-                        block.room_2_rental = parse_int(record.get("2room_rental"))
-                        block.room_3_rental = parse_int(record.get("3room_rental"))
-                        block.other_room_rental = parse_int(record.get("other_room_rental"))
-
-                        block.last_updated = datetime.utcnow()
+                        # Only add to updates if data has changed
+                        if has_changes:
+                            update_data = {
+                                "id": block.id,
+                                **new_data,
+                                "last_updated": datetime.utcnow(),
+                            }
+                            updates.append(update_data)
 
                         summary["matched"] += 1
 
@@ -153,10 +167,6 @@ def ingest_hdb_property_info(session: Session) -> dict[str, int]:
                         print(f"Error processing property record: {e}")
                         summary["errors"] += 1
                         continue
-
-                # Commit batch
-                session.commit()
-                print(f"Batch committed: {offset + len(records)}/{total}")
 
                 # Check if we've fetched all records
                 if offset + len(records) >= total:
@@ -168,6 +178,28 @@ def ingest_hdb_property_info(session: Session) -> dict[str, int]:
                 print(f"Error fetching property data at offset {offset}: {e}")
                 summary["errors"] += 1
                 break
+
+        # Perform bulk update in batches
+        if updates:
+            skipped = summary["matched"] - len(updates)
+            print(f"\nPerforming bulk update of {len(updates)} changed blocks (skipped {skipped} unchanged)...")
+            batch_size = 1000
+            total_updates = len(updates)
+
+            for i in range(0, total_updates, batch_size):
+                batch = updates[i:i+batch_size]
+                session.bulk_update_mappings(Block, batch)
+                session.commit()
+
+                # Progress logging
+                processed = min(i + batch_size, total_updates)
+                print(f"  ✓ Updated {processed}/{total_updates} blocks...")
+
+            print(f"Bulk update complete: {total_updates} blocks updated, {skipped} skipped (no changes)")
+        else:
+            print("\n✅ No changes detected - all blocks are up to date!")
+            # Final commit if no updates
+            session.commit()
 
         # Update ingestion run
         run.rows_processed = summary["total_fetched"]

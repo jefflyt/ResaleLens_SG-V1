@@ -57,34 +57,55 @@ ResaleLens SG is a full-stack web application that provides data-driven insights
 
 5. **Configure environment variables**:
    ```bash
-   cp .env.example .env.local
+   cp .env.example .env
    ```
    
-   Edit `.env.local` and set **required** variables:
+   Edit `.env` and set the following **required** variables:
+
+   **a) Supabase Database (REQUIRED)**
    ```bash
-   # REQUIRED: Supabase connection string
    DATABASE_URL=postgresql://postgres.[ref]:[password]@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres
-   
-   # REQUIRED: Data.gov.sg API (already set in .env.example)
-   DATA_GOV_SG_RESOURCE_ID=d_8b84c4ee58e3cfc0ece0d773c8ca6abc
-   
-   # REQUIRED: OneMap API token (get from https://www.onemap.gov.sg/apidocs/)
-   ONEMAP_API_TOKEN=your-token-here
    ```
+   
+   > **🗄️ Supabase Setup:**  
+   > 1. Create free account at [supabase.com](https://supabase.com)
+   > 2. Create new project (choose Singapore region)
+   > 3. Go to **Settings → Database → Connection String**
+   > 4. Select **Connection Pooling** tab
+   > 5. Copy the URI and replace `[YOUR-PASSWORD]` with your database password
+   > 6. Paste into `.env` as `DATABASE_URL`
 
-6. **Validate environment**:
+   **b) Data.gov.sg API (REQUIRED)**
    ```bash
-   uv run python scripts/validate_env.py
+   # HDB Resale Transactions
+   DATA_GOV_SG_TRANSACTION_ID=d_8b84c4ee58e3cfc0ece0d773c8ca6abc
+   
+   # HDB Property Information
+   DATA_GOV_SG_PROPERTY_INFO_ID=d_17f5382f26140b1fdae0ba2ef6239d2f
    ```
+   
+   > **📊 Data.gov.sg:**  
+   > - No registration needed!
+   > - Both resource IDs are already set in `.env.example`
+   > - Just copy them to your `.env` file
+   > - **Transactions**: Historical HDB resale prices
+   > - **Property Info**: Block details, unit mix, facilities
 
-7. **Run database migrations**:
+   **c) OneMap API (REQUIRED)**
+   ```bash
+   ONEMAP_EMAIL=your-onemap-email@example.com
+   ONEMAP_PASSWORD=your-onemap-password
+   ```
+   
+   > **📍 OneMap Registration:**  
+   > 1. Register at [OneMap API](https://www.onemap.gov.sg/apidocs/register)
+   > 2. Create a free account with your email
+   > 3. Verify your email address
+   > 4. Use your registered email and password in `.env`
+
+6. **Run database migrations**:
    ```bash
    uv run alembic upgrade head
-   ```
-
-8. **Verify connections**:
-   ```bash
-   uv run python scripts/test_connections.py
    ```
 
 ### Running the Application
@@ -109,7 +130,8 @@ The application will be available at `http://localhost:8000`
 | `cd src && uv run mypy resalelens/` | Run type checker |
 | `uv run alembic upgrade head` | Apply database migrations |
 | `uv run alembic revision --autogenerate -m "message"` | Generate new migration |
-| `uv run python scripts/setup_db.py` | Initialize database (first-time setup) |
+| `uv run python scripts/check_ingestion_status.py` | Check ingestion run status |
+| `uv run python scripts/test_weekly_ingestion.py` | Test complete weekly ingestion |
 
 ## Project Structure
 
@@ -146,26 +168,40 @@ ResaleLens is built as a monolithic FastAPI application with server-side renderi
 - **SEO-friendly**: Fully rendered HTML pages
 - **Developer productivity**: Rapid iteration with auto-reload
 
-### Key Design Decisions
+### Architecture
 
-- **FastAPI + Jinja2 + HTMX** over React/Next.js for MVP simplicity
-- **SQLite for local development**, **Supabase PostgreSQL for production/MVP validation**
-- **APScheduler** for automated data ingestion (HDB transactions, POIs, MRT locations)
-- **WeasyPrint** for PDF generation (Python-based, server-side)
+- **Server-side rendering** with Jinja2 templates for fast, SEO-friendly pages
+- **HTMX** for dynamic interactions without complex JavaScript
+- **PostgreSQL** (Supabase) for reliable, scalable data storage
+- **Automated data updates** from official Singapore government sources
 
-> **📌 Database Setup:**  
-> - **Local Development**: Uses SQLite (`data/resalelens.db`) - zero configuration needed  
-> - **Production/MVP**: Uses Supabase PostgreSQL (Singapore region)
+### Data Sources
+
+ResaleLens uses official Singapore government data sources:
+
+- **[HDB Resale Transactions](https://data.gov.sg/datasets/d_8b84c4ee58e3cfc0ece0d773c8ca6abc/view)** - Historical resale flat prices (data.gov.sg)
+- **[HDB Property Information](https://data.gov.sg/datasets/d_17f5382f26140b1fdae0ba2ef6239d2f/view)** - Block details, unit mix, facilities (data.gov.sg)
+- **[OneMap API](https://www.onemap.gov.sg/apidocs/)** - Geolocation and Points of Interest
+
+All data is automatically refreshed **weekly** to ensure accuracy.
+
+**Update Schedule:** Every Sunday at 03:00 SGT
+
+---
+
+## For Developers
+
+> **📌 Database:**  
+> - Uses Supabase PostgreSQL (Singapore region)
 > 
 > **Quick Supabase Setup**:
 > ```bash
 > # 1. Create Supabase project at https://app.supabase.com (Singapore region)
 > # 2. Copy connection string and add to .env.local:
-> DATABASE_URL="postgresql://postgres.[ref]:[password]@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres"
+> DATABASE_URL="postgresql://postgres.[ref]:[password]@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres"
 > 
-> # 3. Run migrations and seed data:
+> # 3. Run migrations:
 > uv run alembic upgrade head
-> uv run python scripts/seed_data.py
 > ```
 > 
 > **See [Supabase Setup Guide](docs/technical/supabase_setup.md) for detailed instructions.**
@@ -208,30 +244,11 @@ GitHub Actions workflow runs on every push and pull request:
 - Type checking (mypy)
 - Test suite (pytest)
 
-## AI-Driven Development
-
-This project leverages **Antigravity**, an advanced agentic AI coding assistant, to streamline planning, implementation, and maintenance. We follow a structured workflow to ensure code quality and maintainable documentation.
-
-### Agent Workflows
-
-Use the following workflows to interact with the AI agent:
-
-#### Setup & Planning
-- **/create_psd**: Validate and refine a user-provided Product Specification Document (PSD)
-- **/plan_product**: Generate high-level architecture and a PR breakdown from a PSD
-- **/bootstrap_repo**: Initialize a greenfield project based on a PSD
-
-#### Feature Development
-- **/plan_epic**: Break down a large feature (Epic) into manageable, testable PRs
-- **/plan_feature**: Plan a specific feature that fits within a single PR
-- **/implement_task**: Execute a planned task or PR, generating code and tests
-
-#### Maintenance
-- **/plan_refactor**: Plan a code refactoring task that preserves existing behavior
-
 ## Contributing
 
 See `docs/technical/context.md` for developer onboarding and architecture details.
+
+For AI-assisted development workflows, see `.agent/workflows/README.md`.
 
 ## License
 

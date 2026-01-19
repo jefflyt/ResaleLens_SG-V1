@@ -423,7 +423,11 @@
 
     <!-- Last Updated -->
     <div class="last-updated">
+        {% if block.last_updated %}
         Last updated: {{ block.last_updated.strftime('%Y-%m-%d %H:%M:%S') }}
+        {% else %}
+        Last updated: N/A
+        {% endif %}
     </div>
 </div>
 

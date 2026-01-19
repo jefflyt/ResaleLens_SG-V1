@@ -19,6 +19,7 @@ from sqlalchemy.orm import Session
 from ..ingestion.utils import log_ingestion_run
 from ..models import Block
 from ..utils.postal_code_patterns import generate_hdb_postal_code
+from .onemap_client import OneMapClient
 
 
 def ingest_hdb_postal_codes(
@@ -29,8 +30,11 @@ def ingest_hdb_postal_codes(
 
     Singapore postal codes for HDB blocks follow a deterministic pattern,
     allowing us to generate them without external API calls.
+    
+    This function also attempts to fetch geolocation (Lat/Lon) from OneMap
+    associated with the generated postal code.
 
-    Pattern: Postal Sector (2 digits) + Letter Code (1 digit) + Block Number (3 digits)
+    Pattern: Postal Sector (2 digits) + Letter Suffix Code (1 digit) + Block Number (3 digits)
     
     Args:
         session: Database session
@@ -44,12 +48,16 @@ def ingest_hdb_postal_codes(
         "total_blocks": 0,
         "blocks_processed": 0,
         "postal_codes_generated": 0,
+        "geocoded": 0,
         "no_pattern_match": 0,
         "skipped_existing": 0,
     }
 
     with log_ingestion_run(session, "hdb_postal_codes") as run:
         print("Starting pattern-based HDB postal code ingestion...")
+        
+        # Initialize OneMap client for geolocation
+        onemap_client = OneMapClient()
 
         # Step 1: Fetch blocks from database
         query = select(Block)
@@ -80,13 +88,33 @@ def ingest_hdb_postal_codes(
             postal_code = candidates[0]
             postal_sector = postal_code[:2]
             
-            # Prepare update
-            updates.append({
+            update_data = {
                 "id": block.id,
                 "postal_code": postal_code,
                 "postal_sector": postal_sector,
                 "last_updated": datetime.utcnow()
-            })
+            }
+
+            # Geolocation: Fetch Lat/Lon if missing
+            if not block.latitude or not block.longitude:
+                try:
+                    # Search by postal code - highly accurate
+                    results = onemap_client.fetch_poi_search(postal_code)
+                    if results:
+                        # Take first result
+                        res = results[0]
+                        lat = res.get("LATITUDE")
+                        lon = res.get("LONGITUDE")
+                        
+                        if lat and lon and lat != "NIL" and lon != "NIL":
+                            update_data["latitude"] = float(lat)
+                            update_data["longitude"] = float(lon)
+                            summary["geocoded"] += 1
+                except Exception as e:
+                    print(f"Geolocation failed for {postal_code}: {e}")
+
+            # Prepare update
+            updates.append(update_data)
             
             summary["postal_codes_generated"] += 1
         
