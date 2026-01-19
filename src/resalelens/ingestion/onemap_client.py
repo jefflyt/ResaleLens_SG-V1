@@ -35,7 +35,7 @@ class OneMapClient:
 
             try:
                 with httpx.Client() as client:
-                    response = client.get(self.BASE_URL, params=params)
+                    response = client.get(self.BASE_URL, params=params)  # type: ignore[arg-type]
                     response.raise_for_status()
                     data = response.json()
 

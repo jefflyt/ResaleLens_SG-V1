@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
+from sqlalchemy import create_engine, text  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -14,8 +15,6 @@ if env_local.exists():
     load_dotenv(env_local)
 elif Path(".env").exists():
     load_dotenv(".env")
-
-from sqlalchemy import create_engine, text
 
 database_url = os.getenv("DATABASE_URL")
 if not database_url:
@@ -56,4 +55,3 @@ with engine.connect() as conn:
 print("=" * 80)
 print("✅ Migration successful")
 print("=" * 80)
-# noqa: E402

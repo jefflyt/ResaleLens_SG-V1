@@ -189,7 +189,7 @@ def ingest_hdb_property_info(session: Session) -> dict[str, int]:
 
             for i in range(0, total_updates, batch_size):
                 batch = updates[i : i + batch_size]
-                session.bulk_update_mappings(Block, batch)
+                session.bulk_update_mappings(Block, batch)  # type: ignore[arg-type]
                 session.commit()
 
                 # Progress logging
