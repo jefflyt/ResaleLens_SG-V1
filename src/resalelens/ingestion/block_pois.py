@@ -42,7 +42,7 @@ def calculate_haversine_distance(lat1: float, lon1: float, lat2: float, lon2: fl
 
 
 def ingest_block_pois(
-    session: Session, max_distance_m: float = 2000.0, batch_size: int = 100
+    session: Session, max_distance_m: float = 1000.0, batch_size: int = 100
 ) -> dict[str, int]:
     """
     Calculate and store distances between blocks and POIs.
@@ -52,7 +52,7 @@ def ingest_block_pois(
 
     Args:
         session: Database session
-        max_distance_m: Maximum distance to consider (default: 2km)
+        max_distance_m: Maximum distance to consider (default: 1km)
         batch_size: Number of blocks to process before committing
 
     Returns:

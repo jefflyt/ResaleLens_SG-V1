@@ -401,14 +401,14 @@ Migration steps:
 2. Populate junction table with distances:
    ```sql
    -- For each block, calculate distance to all POIs
-   -- Insert into block_pois where distance <= 2000m (2km radius)
+   -- Insert into block_pois where distance <= 1000m (1km radius)
    -- Use Haversine formula or PostGIS if available
    ```
 3. Verify population: `SELECT COUNT(*) FROM block_pois`
 
 **Data Population Strategy:**
-- Calculate distances for all block-POI pairs where distance <= 2km
-- Estimated records: 15,000 blocks × 30 POIs × 0.1 (within 2km) = ~45,000 records
+- Calculate distances for all block-POI pairs where distance <= 1km
+- Estimated records: 15,000 blocks × 30 POIs × 0.03 (within 1km) = ~14,000 records
 - Use batch inserts for performance (1000 records per transaction)
 
 **Rollback strategy:**
@@ -544,7 +544,7 @@ uv run pytest tests/test_models.py tests/test_repositories.py tests/utils/test_g
 **Risk 2: Large Data Volume**
 - **Risk:** Junction table may grow large (100k+ records) if all block-POI pairs calculated
 - **Mitigation:**
-  - Only store distances <= 2km (reasonable walking distance)
+  - Only store distances <= 1km (reasonable walking distance)
   - Estimated 45k records for MVP (manageable)
   - Add pagination to repository queries
   - Monitor table size and add distance threshold if needed
@@ -791,9 +791,9 @@ db.close()
 ### Open Questions
 
 1. **POI Distance Threshold**
-   - **Question:** What maximum distance should we store in `block_pois` table (1km, 2km, 5km)?
+   - **Question:** What maximum distance should we store in `block_pois` table (500m, 1km, 2km)?
    - **Impact:** Affects table size and query results
-   - **Recommendation:** Start with 2km (reasonable walking distance); adjust based on user feedback
+   - **Recommendation:** Start with 1km (comfortable walking distance); optimized for database size
 
 2. **Foreign Key Cascade Behavior**
    - **Question:** Should deleting a block cascade delete transactions, or restrict deletion?

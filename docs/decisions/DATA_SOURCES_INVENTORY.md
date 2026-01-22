@@ -279,7 +279,7 @@ def calculate_haversine_distance(lat1, lon1, lat2, lon2):
     # ... [standard Haversine implementation]
 ```
 
-**Threshold:** 2,000 meters (2km radius)
+**Threshold:** 1,000 meters (1km radius)
 
 ### Ingestion Status
 

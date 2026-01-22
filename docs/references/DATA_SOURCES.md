@@ -587,7 +587,7 @@ def calculate_haversine_distance(lat1, lon1, lat2, lon2):
     return R * c
 ```
 
-**Threshold:** 2,000 meters (2km radius)
+**Threshold:** 1,000 meters (1km radius)
 
 #### Data Schema
 
@@ -595,7 +595,7 @@ def calculate_haversine_distance(lat1, lon1, lat2, lon2):
 |-------|------|-------------|-------------|
 | `block_id` | Foreign Key | Reference to `blocks.id` | Required |
 | `poi_id` | Foreign Key | Reference to `pois.id` | Required |
-| `distance_m` | Numeric(10,2) | Distance in meters | Must be ≥ 0, ≤ 2000 |
+| `distance_m` | Numeric(10,2) | Distance in meters | Must be ≥ 0, ≤ 1000 |
 | `created_at` | DateTime | Relationship creation timestamp | Auto |
 
 **Unique Constraint:** (block_id, poi_id)
@@ -654,7 +654,7 @@ POST http://localhost:8000/admin/ingestion/trigger?dataset=block_pois
 ```
 
 **Parameters:**
-- `max_distance_m` (default: 2000) - Maximum distance threshold
+- `max_distance_m` (default: 1000) - Maximum distance threshold
 - `batch_size` (default: 100) - Blocks per batch
 
 ---
@@ -880,7 +880,7 @@ All ingestion attempts logged with:
 
 **Constraints:**
 - ✅ `distance_m >= 0`
-- ✅ `distance_m <= 2000` (threshold)
+- ✅ `distance_m <= 1000` (threshold)
 - ✅ Valid foreign keys to `blocks` and `pois`
 - ✅ Unique: (block_id, poi_id)
 
@@ -998,7 +998,7 @@ Runs comprehensive checks:
 **Example Output:**
 ```
 Blocks coverage: 9675/9675 (100.0%)
-Orphaned blocks (0 POIs within 2km): 0
+Orphaned blocks (0 POIs within 1km): 0
 Avg POIs per covered block: 65.7
 
 POI Type Distribution (Linked):

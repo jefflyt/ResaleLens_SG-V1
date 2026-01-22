@@ -56,7 +56,7 @@ def upgrade() -> None:
     print("This may take a few minutes for ~45k distance calculations...")
 
     # SQL to calculate distances using Haversine formula
-    # Only calculate for distances <= 2000m (2km)
+    # Only calculate for distances <= 1000m (1km)
     populate_sql = """
     INSERT INTO block_pois (block_id, poi_id, distance_m, created_at)
     SELECT
@@ -84,12 +84,12 @@ def upgrade() -> None:
             b.latitude IS NOT NULL
             AND b.longitude IS NOT NULL
             AND (
-                -- Quick bounding box filter (approx 2km = 0.018 degrees)
-                ABS(b.latitude - p.latitude) <= 0.018
-                AND ABS(b.longitude - p.longitude) <= 0.018
+                -- Quick bounding box filter (approx 1km = 0.009 degrees)
+                ABS(b.latitude - p.latitude) <= 0.009
+                AND ABS(b.longitude - p.longitude) <= 0.009
             )
     ) AS distances
-    WHERE distance_m <= 2000  -- Only store distances within 2km
+    WHERE distance_m <= 1000  -- Only store distances within 1km
     ORDER BY block_id, distance_m;
     """
 

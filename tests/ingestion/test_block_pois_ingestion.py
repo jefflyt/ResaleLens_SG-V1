@@ -80,8 +80,8 @@ class TestBlockPOSIngestion(unittest.TestCase):
 
         mock_session.execute.side_effect = [mock_result_pois, mock_result_blocks]
 
-        # Run ingestion with 2km limit
-        summary = ingest_block_pois(mock_session, max_distance_m=2000.0)
+        # Run ingestion with 1km limit
+        summary = ingest_block_pois(mock_session, max_distance_m=1000.0)
 
         # Verification
         self.assertEqual(summary["blocks_processed"], 1)
